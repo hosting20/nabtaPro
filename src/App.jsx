@@ -5,8 +5,15 @@ import Wizard from './components/Wizard.jsx';
 import Analyzing from './components/Analyzing.jsx';
 import Report from './components/Report.jsx';
 import Dashboard from './components/Dashboard.jsx';
+import Landing from './components/Landing.jsx';
 import KeyModal from './components/KeyModal.jsx';
 import Settings from './components/Settings.jsx';
+
+/* استخراج رقم من نص حر (للسعر/التكلفة) */
+function numFrom(s, d) {
+  const m = String(s || '').match(/\d[\d,.]*/);
+  return m ? Math.round(parseFloat(m[0].replace(/,/g, ''))) : d;
+}
 
 const ANALYZE_MSGS = [
   'نقرأ المشكلة والجمهور المستهدف…',
@@ -30,6 +37,9 @@ export default function App() {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('nabta_api_key') || '');
   const [showKeyModal, setShowKeyModal] = useState(() => !localStorage.getItem('nabta_api_key'));
   const [showSettings, setShowSettings] = useState(false);
+  const [finance, setFinance] = useState(null);
+  const [landing, setLanding] = useState(null);
+  const [landingLoading, setLandingLoading] = useState(false);
 
   const analyzeTimer = useRef(null);
 
@@ -113,11 +123,84 @@ export default function App() {
       (r.recommendations || []).forEach((x, i) => t.push({ id: 'r' + i, text: x, cat: 'النمو', done: false }));
     }
     setTasks(t);
+    if (!finance) {
+      setFinance({
+        customers: 20,
+        growth: 15,
+        price: numFrom(answers.r_price, 49),
+        varCost: numFrom(answers.r_cost, 15),
+        fixedCost: 5000,
+      });
+    }
     setScreen('dashboard');
   };
 
   const toggleTask = (id) =>
     setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
+
+  const setFinanceField = (id, value) => setFinance((f) => ({ ...f, [id]: value }));
+
+  /* ── صفحة الهبوط ── */
+  const fallbackLanding = () => {
+    const r = report || {};
+    const feats = (answers.s_what || answers.s_uvp || answers.s_how)
+      ? [answers.s_uvp, answers.s_what, answers.s_how].filter(Boolean).slice(0, 3)
+      : (r.recommendations || ['ميزة 1', 'ميزة 2', 'ميزة 3']).slice(0, 3);
+    while (feats.length < 3) feats.push('');
+    return {
+      headline: answers.s_uvp || (r.verdict ? r.verdict : 'حلٌّ ذكي يوفّر وقتك وجهدك'),
+      subheadline: answers.p_what || (r.marketSize && r.marketSize.note) || 'نساعدك على حلّ مشكلتك بأبسط طريقة وأسرع وقت.',
+      cta: 'ابدأ الآن مجاناً',
+      audience: answers.p_who || answers.m_customer || 'لرواد الأعمال الطموحين',
+      features: feats,
+      color: '#236b44',
+    };
+  };
+
+  const openLanding = () => {
+    setLanding((l) => l || fallbackLanding());
+    setScreen('landing');
+  };
+
+  const setLandingField = (id, value) => setLanding((l) => ({ ...l, [id]: value }));
+  const setLandingFeature = (i, value) =>
+    setLanding((l) => {
+      const features = [...l.features];
+      features[i] = value;
+      return { ...l, features };
+    });
+
+  const generateLanding = () => {
+    if (landingLoading) return;
+    setLandingLoading(true);
+    const dump = STEPS.map(
+      (s) => '# ' + s.title + '\n' + s.fields.map((f) => '- ' + f.label + ': ' + (answers[f.id] || '(لم يُجب)')).join('\n')
+    ).join('\n\n');
+    const fin = (obj) => {
+      setLanding((l) => ({ ...l, ...obj, features: (obj.features || l.features).slice(0, 3) }));
+      setLandingLoading(false);
+    };
+    if (apiKey) {
+      callClaude(
+        [
+          {
+            role: 'user',
+            content:
+              'أنت كاتب إعلانات محترف. بناءً على فكرة المشروع التالية، اكتب نص صفحة هبوط عربية مقنعة. أعد JSON صالحاً فقط دون أي نص آخر بهذا الشكل:\n{"headline":"<عنوان جذاب قصير>","subheadline":"<جملة قيمة>","cta":"<نص زر>","features":["<ميزة>","<ميزة>","<ميزة>"],"audience":"<وصف الجمهور>"}\n\n' +
+              dump,
+          },
+        ],
+        apiKey
+      )
+        .then((raw) => {
+          const m = raw.match(/\{[\s\S]*\}/);
+          fin(JSON.parse(m[0]));
+        })
+        .catch(() => fin(fallbackLanding()));
+    } else {
+      setTimeout(() => fin(fallbackLanding()), 1200);
+    }
+  };
 
   /* ── المفتاح والإعدادات ── */
   const saveKey = (v) => {
@@ -177,10 +260,24 @@ export default function App() {
           report={report}
           tasks={tasks}
           dashTab={dashTab}
+          finance={finance}
           onBackReport={() => setScreen('report')}
           onDownload={() => window.print()}
           onTab={setDashTab}
           onToggleTask={toggleTask}
+          onFinanceChange={setFinanceField}
+          onOpenLanding={openLanding}
+        />
+      )}
+
+      {screen === 'landing' && landing && (
+        <Landing
+          landing={landing}
+          loading={landingLoading}
+          onField={setLandingField}
+          onFeature={setLandingFeature}
+          onGenerate={generateLanding}
+          onBack={() => setScreen('dashboard')}
         />
       )}
 
