@@ -6,8 +6,10 @@ import Analyzing from './components/Analyzing.jsx';
 import Report from './components/Report.jsx';
 import Dashboard from './components/Dashboard.jsx';
 import Landing from './components/Landing.jsx';
-import KeyModal from './components/KeyModal.jsx';
 import Settings from './components/Settings.jsx';
+
+/* يُقرأ مفتاح Anthropic من متغيّرات البيئة وقت البناء (Vite) */
+const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY || '';
 
 /* استخراج رقم من نص حر (للسعر/التكلفة) */
 function numFrom(s, d) {
@@ -34,8 +36,7 @@ export default function App() {
   const [dashTab, setDashTab] = useState('overview');
   const [gaugeStyle, setGaugeStyle] = useState('gauge');
   const [stepperStyle, setStepperStyle] = useState('numbered');
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('nabta_api_key') || '');
-  const [showKeyModal, setShowKeyModal] = useState(() => !localStorage.getItem('nabta_api_key'));
+  const apiKey = API_KEY;
   const [showSettings, setShowSettings] = useState(false);
   const [finance, setFinance] = useState(null);
   const [landing, setLanding] = useState(null);
@@ -202,21 +203,6 @@ export default function App() {
     }
   };
 
-  /* ── المفتاح والإعدادات ── */
-  const saveKey = (v) => {
-    if (v) {
-      localStorage.setItem('nabta_api_key', v);
-      setApiKey(v);
-    }
-    setShowKeyModal(false);
-  };
-  const resetKey = () => {
-    localStorage.removeItem('nabta_api_key');
-    setApiKey('');
-    setShowSettings(false);
-    setShowKeyModal(true);
-  };
-
   const handleNext = () => {
     if (stepIndex < 4) setStepIndex(stepIndex + 1);
     else analyze();
@@ -281,18 +267,17 @@ export default function App() {
         />
       )}
 
-      {screen === 'wizard' && showSettings && !showKeyModal && (
+      {screen === 'wizard' && showSettings && (
         <Settings
           gaugeStyle={gaugeStyle}
           stepperStyle={stepperStyle}
           onGauge={setGaugeStyle}
           onStepper={setStepperStyle}
-          onResetKey={resetKey}
           onClose={() => setShowSettings(false)}
         />
       )}
 
-      {screen === 'wizard' && !showKeyModal && (
+      {screen === 'wizard' && (
         <button
           className="nb-noprint"
           title="الإعدادات"
@@ -302,8 +287,6 @@ export default function App() {
           ⚙
         </button>
       )}
-
-      {showKeyModal && <KeyModal onSave={saveKey} onSkip={() => setShowKeyModal(false)} />}
     </>
   );
 }
