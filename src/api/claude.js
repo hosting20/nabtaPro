@@ -1,29 +1,17 @@
 import { overallScore } from '../utils/scoring.js';
 
-/* استدعاء Claude عبر واجهة Anthropic مباشرة من المتصفح */
-export function callClaude(messages, apiKey) {
-  return fetch('https://api.anthropic.com/v1/messages', {
+/* استدعاء Claude عبر الخادم الوسيط الآمن (/api/ai) — لا يلمس المتصفح المفتاح */
+export function callClaude(messages) {
+  return fetch('/api/ai', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1500, messages }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages }),
   })
-    .then((res) => {
-      if (!res.ok) {
-        return res
-          .json()
-          .catch(() => ({}))
-          .then((e) => {
-            throw new Error((e.error && e.error.message) || 'HTTP ' + res.status);
-          });
-      }
-      return res.json();
-    })
-    .then((data) => data.content[0].text);
+    .then(async (res) => {
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'HTTP ' + res.status);
+      return data.text;
+    });
 }
 
 /* تقرير احتياطي يُستخدم بدون مفتاح API أو عند فشل الطلب */

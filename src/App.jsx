@@ -1,3 +1,4 @@
+'use client';
 import { useEffect, useRef, useState } from 'react';
 import { STEPS, DEFAULT_TIPS } from './data/steps.js';
 import { callClaude, fallbackReport, buildAnalyzePrompt } from './api/claude.js';
@@ -7,9 +8,6 @@ import Report from './components/Report.jsx';
 import Dashboard from './components/Dashboard.jsx';
 import Landing from './components/Landing.jsx';
 import Settings from './components/Settings.jsx';
-
-/* يُقرأ مفتاح Anthropic من متغيّرات البيئة وقت البناء (Vite) */
-const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY || '';
 
 /* استخراج رقم من نص حر (للسعر/التكلفة) */
 function numFrom(s, d) {
@@ -24,7 +22,7 @@ const ANALYZE_MSGS = [
   'نبني خطة البدء…',
 ];
 
-export default function App() {
+export default function App({ aiEnabled = true }) {
   const [screen, setScreen] = useState('wizard'); // wizard | analyzing | report | dashboard
   const [stepIndex, setStepIndex] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -36,7 +34,6 @@ export default function App() {
   const [dashTab, setDashTab] = useState('overview');
   const [gaugeStyle, setGaugeStyle] = useState('gauge');
   const [stepperStyle, setStepperStyle] = useState('numbered');
-  const apiKey = API_KEY;
   const [showSettings, setShowSettings] = useState(false);
   const [finance, setFinance] = useState(null);
   const [landing, setLanding] = useState(null);
@@ -59,25 +56,23 @@ export default function App() {
       setAiTips((t) => [...t, text]);
       setTipLoading(false);
     };
-    if (apiKey) {
-      callClaude(
-        [
-          {
-            role: 'user',
-            content:
-              'أنت «مرشد نبتة»، مستشار أعمال ودود يساعد رائد أعمال في مرحلة "' +
-              step.title +
-              '". إجاباته:\n' +
-              ans +
-              '\n\nأعطه نصيحة عملية واحدة محددة وقصيرة (جملتان كحد أقصى) بالعربية لتقوية فكرته في هذه المرحلة بالذات. ابدأ مباشرة دون مقدمات.',
-          },
-        ],
-        apiKey
-      )
+    const demo = () => finish(DEFAULT_TIPS[(stepIndex + aiTips.length + 1) % DEFAULT_TIPS.length]);
+    if (aiEnabled) {
+      callClaude([
+        {
+          role: 'user',
+          content:
+            'أنت «مرشد نبتة»، مستشار أعمال ودود يساعد رائد أعمال في مرحلة "' +
+            step.title +
+            '". إجاباته:\n' +
+            ans +
+            '\n\nأعطه نصيحة عملية واحدة محددة وقصيرة (جملتان كحد أقصى) بالعربية لتقوية فكرته في هذه المرحلة بالذات. ابدأ مباشرة دون مقدمات.',
+        },
+      ])
         .then((t) => finish(t.trim()))
-        .catch(() => finish('تعذّر جلب النصيحة الآن، تأكد من مفتاح API وحاول مجدداً.'));
+        .catch(demo);
     } else {
-      setTimeout(() => finish(DEFAULT_TIPS[(stepIndex + aiTips.length + 1) % DEFAULT_TIPS.length]), 350);
+      setTimeout(demo, 350);
     }
   };
 
@@ -102,8 +97,8 @@ export default function App() {
       setScreen('report');
     };
 
-    if (apiKey) {
-      callClaude([{ role: 'user', content: prompt }], apiKey)
+    if (aiEnabled) {
+      callClaude([{ role: 'user', content: prompt }])
         .then((raw) => {
           const m = raw.match(/\{[\s\S]*\}/);
           finish(JSON.parse(m[0]));
@@ -181,18 +176,15 @@ export default function App() {
       setLanding((l) => ({ ...l, ...obj, features: (obj.features || l.features).slice(0, 3) }));
       setLandingLoading(false);
     };
-    if (apiKey) {
-      callClaude(
-        [
-          {
-            role: 'user',
-            content:
-              'أنت كاتب إعلانات محترف. بناءً على فكرة المشروع التالية، اكتب نص صفحة هبوط عربية مقنعة. أعد JSON صالحاً فقط دون أي نص آخر بهذا الشكل:\n{"headline":"<عنوان جذاب قصير>","subheadline":"<جملة قيمة>","cta":"<نص زر>","features":["<ميزة>","<ميزة>","<ميزة>"],"audience":"<وصف الجمهور>"}\n\n' +
-              dump,
-          },
-        ],
-        apiKey
-      )
+    if (aiEnabled) {
+      callClaude([
+        {
+          role: 'user',
+          content:
+            'أنت كاتب إعلانات محترف. بناءً على فكرة المشروع التالية، اكتب نص صفحة هبوط عربية مقنعة. أعد JSON صالحاً فقط دون أي نص آخر بهذا الشكل:\n{"headline":"<عنوان جذاب قصير>","subheadline":"<جملة قيمة>","cta":"<نص زر>","features":["<ميزة>","<ميزة>","<ميزة>"],"audience":"<وصف الجمهور>"}\n\n' +
+            dump,
+        },
+      ])
         .then((raw) => {
           const m = raw.match(/\{[\s\S]*\}/);
           fin(JSON.parse(m[0]));

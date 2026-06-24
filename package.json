@@ -1,20 +1,20 @@
 {
   "name": "nabta-pro",
   "private": true,
-  "version": "1.0.0",
-  "description": "نبتة — مستشار الأعمال الذكي (نسخة React)",
-  "type": "module",
+  "version": "2.0.0",
+  "description": "نبتة — مستشار الأعمال الذكي (SaaS على Next.js + Supabase + Stripe)",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.45.4",
+    "next": "14.2.15",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^5.4.11"
+    "react-dom": "^18.3.1",
+    "stripe": "^17.2.0"
   }
 }

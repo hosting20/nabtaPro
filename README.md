@@ -1,87 +1,88 @@
-# نبتة — مستشار الأعمال الذكي (نسخة React)
+# نبتة — مستشار الأعمال الذكي (SaaS)
 
-تطبيق React يساعد رائد الأعمال على **زرع فكرته، التحقق منها، وتحويلها إلى خطة تنفيذ** — عبر معالج من 5 مراحل، مؤشر نمو حيّ، تحليل جدوى بالذكاء الاصطناعي (SWOT، حجم السوق، المنافسون، خطة البدء)، ولوحة متابعة للمهام.
+منصّة **SaaS** عربية تحوّل فكرة المشروع إلى تحليل جدوى متكامل بالذكاء الاصطناعي:
+معالج من 5 مراحل، مؤشر نمو حيّ، تقرير جدوى (SWOT، حجم السوق، المنافسون، خطة البدء)،
+لوحة متابعة (مهام · خطة زمنية · توقعات مالية تفاعلية)، وباني صفحة هبوط مع اختبار طلب.
 
-هذه إعادة بناء كاملة بـ **React + Vite** للنسخة الأصلية التي كانت ملف HTML واحداً.
+مبنيّة على **Next.js (App Router) + Supabase + Stripe**.
 
-## التشغيل
+## المزايا التقنية (SaaS)
+
+- 🔐 **مصادقة كاملة** عبر Supabase: بريد/كلمة مرور + Google (OAuth).
+- 🛡️ **خادم وسيط آمن للذكاء الاصطناعي** (`/api/ai`): مفتاح Anthropic يبقى على
+  الخادم ولا يصل المتصفح إطلاقاً، محميّ بالمصادقة والاشتراك.
+- 💳 **اشتراكات Stripe**: خطة مجانية + Pro، مع Checkout وWebhook لتحديث الحالة.
+- 🚪 **حماية المسارات** عبر middleware (التطبيق يتطلب تسجيل دخول).
+- صفحة هبوط تسويقية، صفحة أسعار، وصفحات دخول/تسجيل.
+
+## التشغيل محلياً
 
 ```bash
 npm install
-npm run dev      # خادم التطوير على http://localhost:5173
-npm run build    # بناء الإنتاج في مجلد dist
-npm run preview  # معاينة بناء الإنتاج
+cp .env.example .env.local   # ثم املأ القيم
+npm run dev                  # http://localhost:3000
 ```
 
-> يتطلب Node.js 18 أو أحدث.
+> يتطلب Node.js 18.18+ وحساب Supabase وحساب Stripe (للاشتراكات).
 
-## الذكاء الاصطناعي
+## الإعداد خطوة بخطوة
 
-- ميزتا **«اطلب نصيحة»** و**«حلّل فكرتي»** تستخدمان خدمة Anthropic (Claude) عبر الإنترنت،
-  لذا تحتاجان اتصالاً بالإنترنت ومفتاح API.
-- احصل على المفتاح من <https://console.anthropic.com>.
-- يُقرأ المفتاح من **متغيّر بيئة** اسمه `VITE_ANTHROPIC_API_KEY` وقت البناء:
+### 1) Supabase
+1. أنشئ مشروعاً على <https://supabase.com>.
+2. نفّذ `supabase/schema.sql` في **SQL Editor** (يُنشئ جدول `profiles` والـ trigger).
+3. من **Project Settings → API** انسخ: `NEXT_PUBLIC_SUPABASE_URL`،
+   `NEXT_PUBLIC_SUPABASE_ANON_KEY`، و`SUPABASE_SERVICE_ROLE_KEY`.
+4. لتفعيل Google: **Authentication → Providers → Google** وأضف عميل OAuth،
+   ثم في **URL Configuration** أضف `http://localhost:3000/auth/callback`
+   (ورابط الإنتاج) إلى Redirect URLs.
 
-  ```bash
-  cp .env.example .env
-  # ثم ضع مفتاحك في .env
-  VITE_ANTHROPIC_API_KEY=sk-ant-api03-...
-  ```
+### 2) Anthropic
+- ضع مفتاحك في `ANTHROPIC_API_KEY` (خادم فقط). احصل عليه من
+  <https://console.anthropic.com>.
 
-  على منصات الاستضافة (Vercel، Netlify، …) أضف المتغيّر نفسه في إعدادات
-  Environment Variables للمشروع، فلا حاجة لإدخال المفتاح من الواجهة.
-- بدون ضبط المتغيّر، يعمل التطبيق تلقائياً ببيانات تجريبية (تقرير احتياطي) دون AI.
+### 3) Stripe
+1. أنشئ منتج «Pro» بسعر شهري متكرر، وانسخ **Price ID** إلى `STRIPE_PRICE_ID`.
+2. انسخ `STRIPE_SECRET_KEY`.
+3. أنشئ Webhook يشير إلى `https://<domain>/api/stripe/webhook` بالأحداث:
+   `checkout.session.completed`، `customer.subscription.*`، وانسخ السرّ إلى
+   `STRIPE_WEBHOOK_SECRET`. محلياً استخدم: `stripe listen --forward-to localhost:3000/api/stripe/webhook`.
 
-> ملاحظة أمان: لأن هذا تطبيق واجهة فقط، فإن أي متغيّر بادئته `VITE_` يُدمَج داخل
-> حزمة المتصفح وقت البناء ويصبح ظاهراً للمستخدم. للإنتاج الجادّ، مرّر طلبات
-> Anthropic عبر خادم وسيط (proxy) يحتفظ بالمفتاح ولا يكشفه.
-
-## المزايا
-
-- **معالج من 5 مراحل**: المشكلة · السوق · الحل · الإيرادات · الإطلاق.
-- **مؤشر نمو حيّ** يتحدّث أثناء الكتابة (قوس / حلقة / أعمدة عبر الإعدادات ⚙).
-- **شريط مراحل** بثلاثة أنماط (أرقام / تقدّم / مقاطع).
-- **مرشد نبتة الذكي**: نصائح فورية مخصّصة لكل مرحلة.
-- **تقرير جدوى**: درجة نضج، حكم عام، حجم السوق (TAM/SAM/SOM)، الإيرادات، SWOT، المنافسون، خطة البدء.
-- **لوحة متابعة**: مؤشرات أداء، تقدّم التنفيذ، قائمة مهام قابلة للتعليم، وتحليل تفصيلي.
-- **تنزيل PDF** عبر `window.print()` ثم «حفظ كـ PDF».
-- واجهة عربية كاملة **RTL** بخطوط Tajawal و IBM Plex Sans Arabic.
+> بدون ضبط Supabase يعمل المشروع في **وضع تطوير** (كل المزايا مفعّلة بلا تسجيل
+> دخول، والذكاء الاصطناعي يعمل إن ضُبط `ANTHROPIC_API_KEY`).
 
 ## بنية المشروع
 
 ```
 nabtaPro/
-├── index.html              # نقطة دخول Vite + تحميل الخطوط
-├── vite.config.js
-├── package.json
+├── next.config.mjs · jsconfig.json · package.json
+├── .env.example
+├── supabase/schema.sql          # جداول وسياسات قاعدة البيانات
 └── src/
-    ├── main.jsx            # تركيب React في #root
-    ├── App.jsx             # الحالة وتنسيق الشاشات والإجراءات
-    ├── index.css           # متغيرات الألوان، الحركات، أنماط الطباعة
-    ├── data/
-    │   └── steps.js        # بيانات المراحل والنصائح الافتراضية
-    ├── utils/
-    │   └── scoring.js      # احتساب الدرجة والمراحل
-    ├── api/
-    │   └── claude.js       # استدعاء Claude + التقرير الاحتياطي
-    └── components/
-        ├── Wizard.jsx      # شاشة المعالج
-        ├── Stepper.jsx     # شريط المراحل
-        ├── Gauge.jsx       # مؤشر النمو
-        ├── Breakdown.jsx   # تفصيل الدرجة
-        ├── MentorTips.jsx  # مرشد نبتة الذكي
-        ├── Analyzing.jsx   # شاشة التحميل
-        ├── Report.jsx      # تقرير الجدوى
-        ├── Swot.jsx        # مصفوفة SWOT
-        ├── Dashboard.jsx   # لوحة المتابعة (نظرة/مهام/خطة زمنية/مالية/تحليل)
-        ├── Gantt.jsx       # الخطة الزمنية (Gantt مبسّط)
-        ├── Finance.jsx     # المالية + رسوم تفاعلية
-        ├── Landing.jsx     # باني صفحة الهبوط + اختبار الطلب
-        └── Settings.jsx    # لوحة الإعدادات
+    ├── middleware.js            # تحديث الجلسة + حماية /app
+    ├── App.jsx                  # تطبيق نبتة (مكوّن عميل)
+    ├── lib/supabase/            # عملاء Supabase (client/server/admin)
+    ├── app/
+    │   ├── layout.jsx · globals.css
+    │   ├── page.jsx             # الصفحة التسويقية
+    │   ├── login · signup       # المصادقة
+    │   ├── pricing              # الأسعار + Stripe Checkout
+    │   ├── app/                 # التطبيق المحمي (page + AppClient)
+    │   ├── auth/callback        # تبادل رمز OAuth بجلسة
+    │   └── api/
+    │       ├── ai               # الخادم الوسيط لـ Claude (آمن)
+    │       └── stripe/          # checkout + webhook
+    ├── components/              # واجهة التطبيق (Wizard, Report, Dashboard …)
+    ├── data/steps.js · utils/scoring.js
+    └── api/claude.js            # عميل يستدعي /api/ai
 ```
 
-## ملاحظة أمان
+## الخطط
 
-يُرسَل مفتاح API مباشرةً من المتصفح إلى Anthropic باستخدام ترويسة
-`anthropic-dangerous-direct-browser-access`. هذا مناسب للاستخدام الشخصي والتجارب
-المحلية فقط؛ في الإنتاج مرّر الطلبات عبر خادم وسيط لإخفاء المفتاح.
+| | مجاني | Pro |
+|---|---|---|
+| معالج الفكرة ولوحة المتابعة | ✓ | ✓ |
+| التحليل بالذكاء الاصطناعي | تجريبي | حقيقي ✦ |
+| مرشد نبتة وتوليد صفحة الهبوط | — | ✓ |
+
+> المستخدم غير المشترك يعمل لديه التطبيق ببيانات تجريبية؛ الاشتراك في Pro يفعّل
+> طلبات Claude الحقيقية عبر الخادم الوسيط.
