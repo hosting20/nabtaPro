@@ -13,6 +13,8 @@
   الخادم ولا يصل المتصفح إطلاقاً، محميّ بالمصادقة والاشتراك.
 - 💳 **اشتراكات Stripe**: خطة مجانية + Pro، مع Checkout وWebhook لتحديث الحالة.
 - 🚪 **حماية المسارات** عبر middleware (التطبيق يتطلب تسجيل دخول).
+- 💾 **حفظ المشاريع** لكل مستخدم في قاعدة البيانات (حفظ/فتح/حذف) محميّة بـ RLS.
+- ⚙ **إدارة الاشتراك** عبر Stripe Customer Portal (ترقية/إلغاء/تحديث البطاقة).
 - صفحة هبوط تسويقية، صفحة أسعار، وصفحات دخول/تسجيل.
 
 ## التشغيل محلياً
@@ -70,8 +72,9 @@ nabtaPro/
     │   ├── auth/callback        # تبادل رمز OAuth بجلسة
     │   └── api/
     │       ├── ai               # الخادم الوسيط لـ Claude (آمن)
-    │       └── stripe/          # checkout + webhook
-    ├── components/              # واجهة التطبيق (Wizard, Report, Dashboard …)
+    │       └── stripe/          # checkout + portal + webhook
+    ├── lib/projects.js          # حفظ/فتح/حذف المشاريع (RLS)
+    ├── components/              # واجهة التطبيق (Wizard, Report, Dashboard, ProjectsBar …)
     ├── data/steps.js · utils/scoring.js
     └── api/claude.js            # عميل يستدعي /api/ai
 ```

@@ -8,6 +8,7 @@ import Report from './components/Report.jsx';
 import Dashboard from './components/Dashboard.jsx';
 import Landing from './components/Landing.jsx';
 import Settings from './components/Settings.jsx';
+import ProjectsBar from './components/ProjectsBar.jsx';
 
 /* استخراج رقم من نص حر (للسعر/التكلفة) */
 function numFrom(s, d) {
@@ -22,7 +23,7 @@ const ANALYZE_MSGS = [
   'نبني خطة البدء…',
 ];
 
-export default function App({ aiEnabled = true }) {
+export default function App({ aiEnabled = true, canSave = false }) {
   const [screen, setScreen] = useState('wizard'); // wizard | analyzing | report | dashboard
   const [stepIndex, setStepIndex] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -203,9 +204,25 @@ export default function App({ aiEnabled = true }) {
     if (stepIndex > 0) setStepIndex(stepIndex - 1);
   };
 
+  /* ── لقطة الحالة للحفظ/التحميل ── */
+  const getSnapshot = () => ({ answers, report, tasks, finance, landing, stepIndex, dashTab, screen });
+  const loadSnapshot = (d) => {
+    setAnswers(d.answers || {});
+    setReport(d.report || null);
+    setTasks(d.tasks || []);
+    setFinance(d.finance || null);
+    setLanding(d.landing || null);
+    setStepIndex(d.stepIndex || 0);
+    setDashTab(d.dashTab || 'overview');
+    setAiTips([]);
+    setScreen(d.report ? (d.screen && d.screen !== 'analyzing' ? d.screen : 'report') : 'wizard');
+  };
+
   /* ── العرض ── */
   return (
     <>
+      {canSave && <ProjectsBar getSnapshot={getSnapshot} onLoad={loadSnapshot} />}
+
       {screen === 'wizard' && (
         <Wizard
           stepIndex={stepIndex}

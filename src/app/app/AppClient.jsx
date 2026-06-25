@@ -14,13 +14,26 @@ export default function AppClient({ email, isPro }) {
     router.push('/login');
   };
 
+  const manageBilling = async () => {
+    try {
+      const res = await fetch('/api/stripe/portal', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'تعذّر فتح بوابة الاشتراك');
+      window.location.href = data.url;
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
   return (
     <div>
       {/* شريط علوي */}
       <div className="nb-noprint" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, padding: '12px 22px', background: '#fff', borderBottom: '1px solid var(--line)', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button onClick={signOut} style={{ background: '#fff', color: 'var(--soft)', fontWeight: 600, fontSize: 13, border: '1.5px solid var(--line)', borderRadius: 10, padding: '8px 14px' }}>تسجيل الخروج</button>
-          {!isPro && (
+          {isPro ? (
+            <button onClick={manageBilling} style={{ background: '#fff', color: 'var(--g700)', fontWeight: 700, fontSize: 13, border: '1.5px solid var(--g100)', borderRadius: 10, padding: '8px 14px', cursor: 'pointer' }}>⚙ إدارة الاشتراك</button>
+          ) : (
             <a href="/pricing" style={{ textDecoration: 'none', background: 'var(--g700)', color: '#fff', fontWeight: 700, fontSize: 13, border: 'none', borderRadius: 10, padding: '9px 16px' }}>↗ ترقية إلى Pro</a>
           )}
         </div>
@@ -45,7 +58,7 @@ export default function AppClient({ email, isPro }) {
         </div>
       )}
 
-      <App aiEnabled={isPro} />
+      <App aiEnabled={isPro} canSave={supabaseConfigured()} />
     </div>
   );
 }
