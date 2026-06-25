@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation';
 import App from '@/App.jsx';
 import { createClient, supabaseConfigured } from '@/lib/supabase/client';
 
-export default function AppClient({ email, isPro }) {
+export default function AppClient({ email, isPro, initialProjectId }) {
   const router = useRouter();
 
   const signOut = async () => {
@@ -58,7 +58,7 @@ export default function AppClient({ email, isPro }) {
         </div>
       )}
 
-      <App aiEnabled={isPro} canSave={supabaseConfigured()} />
+      <App aiEnabled={isPro} canSave={supabaseConfigured()} initialProjectId={initialProjectId} />
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { listProjects, loadProject, saveProject, deleteProject } from '@/lib/projects.js';
 
 /* شريط حفظ/تحميل المشاريع — يظهر للمستخدمين المسجّلين */
-export default function ProjectsBar({ getSnapshot, onLoad }) {
+export default function ProjectsBar({ getSnapshot, onLoad, initialId }) {
   const [projects, setProjects] = useState([]);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
@@ -15,7 +15,18 @@ export default function ProjectsBar({ getSnapshot, onLoad }) {
 
   useEffect(() => {
     refresh();
-  }, []);
+    // فتح مشروع محدّد عند الوصول عبر /app?project=ID
+    if (initialId) {
+      loadProject(initialId)
+        .then((p) => {
+          onLoad(p.data || {});
+          setCurrentId(p.id);
+          setName(p.name);
+        })
+        .catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialId]);
 
   const flash = (t) => {
     setMsg(t);
@@ -81,8 +92,9 @@ export default function ProjectsBar({ getSnapshot, onLoad }) {
   return (
     <div className="nb-noprint" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '10px 22px', background: '#fff', borderBottom: '1px solid var(--line)', flexWrap: 'wrap' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <button onClick={() => setOpen((o) => !o)} style={btn('#fff', 'var(--g700)', '1.5px solid var(--g100)')}>📁 مشاريعي ({projects.length})</button>
+        <a href="/app/projects" style={{ textDecoration: 'none', ...btn('#fff', 'var(--g700)', '1.5px solid var(--g100)') }}>📁 مشاريعي ({projects.length})</a>
         <button onClick={newProject} style={btn('#fff', 'var(--soft)', '1.5px solid var(--line)')}>＋ جديد</button>
+        <button onClick={() => setOpen((o) => !o)} style={btn('#fff', 'var(--soft)', '1.5px solid var(--line)')}>فتح سريع ▾</button>
         {msg && <span style={{ fontSize: 13, color: 'var(--g600)', fontWeight: 600 }}>{msg}</span>}
       </div>
 

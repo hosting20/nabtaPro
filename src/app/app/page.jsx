@@ -3,9 +3,10 @@ import AppClient from './AppClient.jsx';
 
 export const dynamic = 'force-dynamic';
 
-export default async function AppPage() {
+export default async function AppPage({ searchParams }) {
   let email = '';
   let isPro = false;
+  const initialProjectId = searchParams?.project || null;
 
   if (supabaseConfigured()) {
     const supabase = createClient();
@@ -27,5 +28,5 @@ export default async function AppPage() {
     email = 'وضع التطوير';
   }
 
-  return <AppClient email={email} isPro={isPro} />;
+  return <AppClient email={email} isPro={isPro} initialProjectId={initialProjectId} />;
 }

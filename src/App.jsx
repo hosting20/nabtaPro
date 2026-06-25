@@ -23,7 +23,7 @@ const ANALYZE_MSGS = [
   'نبني خطة البدء…',
 ];
 
-export default function App({ aiEnabled = true, canSave = false }) {
+export default function App({ aiEnabled = true, canSave = false, initialProjectId = null }) {
   const [screen, setScreen] = useState('wizard'); // wizard | analyzing | report | dashboard
   const [stepIndex, setStepIndex] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -221,7 +221,7 @@ export default function App({ aiEnabled = true, canSave = false }) {
   /* ── العرض ── */
   return (
     <>
-      {canSave && <ProjectsBar getSnapshot={getSnapshot} onLoad={loadSnapshot} />}
+      {canSave && <ProjectsBar getSnapshot={getSnapshot} onLoad={loadSnapshot} initialId={initialProjectId} />}
 
       {screen === 'wizard' && (
         <Wizard
