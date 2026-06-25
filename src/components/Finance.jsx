@@ -19,12 +19,17 @@ function fmt(n) {
   return String(Math.round(n));
 }
 
+/* مبلغ بالريال السعودي */
+function money(n) {
+  return fmt(n) + ' ر.س';
+}
+
 const sliders = [
   { id: 'customers', label: 'العملاء البدئيون', min: 1, max: 500, step: 1, suffix: '' },
   { id: 'growth', label: 'النمو الشهري', min: 0, max: 50, step: 1, suffix: '%' },
-  { id: 'price', label: 'السعر / عميل', min: 0, max: 1000, step: 5, suffix: '' },
-  { id: 'varCost', label: 'تكلفة العميل', min: 0, max: 500, step: 5, suffix: '' },
-  { id: 'fixedCost', label: 'تكاليف ثابتة شهرية', min: 0, max: 50000, step: 500, suffix: '' },
+  { id: 'price', label: 'السعر / عميل', min: 0, max: 1000, step: 5, money: true },
+  { id: 'varCost', label: 'تكلفة العميل', min: 0, max: 500, step: 5, money: true },
+  { id: 'fixedCost', label: 'تكاليف ثابتة شهرية', min: 0, max: 50000, step: 500, money: true },
 ];
 
 /* تبويب المالية — مدخلات تفاعلية + رسوم إيرادات/تكاليف */
@@ -71,9 +76,9 @@ export default function Finance({ finance, onChange }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* مؤشرات */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
-        {kpiCard('إجمالي الإيرادات (12ش)', fmt(totalRev), 'var(--g700)')}
-        {kpiCard('إجمالي التكاليف (12ش)', fmt(totalCost), '#b06a1f')}
-        {kpiCard('صافي الربح (12ش)', fmt(netProfit), netProfit >= 0 ? 'var(--g600)' : '#b03f3f')}
+        {kpiCard('إجمالي الإيرادات (12ش)', money(totalRev), 'var(--g700)')}
+        {kpiCard('إجمالي التكاليف (12ش)', money(totalCost), '#b06a1f')}
+        {kpiCard('صافي الربح (12ش)', money(netProfit), netProfit >= 0 ? 'var(--g600)' : '#b03f3f')}
         {kpiCard('نقطة التعادل', breakEven ? 'الشهر ' + breakEven : 'لم تتحقق', breakEven ? 'var(--g700)' : '#b03f3f', 'تراكمياً')}
       </div>
 
@@ -86,7 +91,7 @@ export default function Finance({ finance, onChange }) {
               <div key={s.id}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                   <span style={{ fontFamily: 'Tajawal, sans-serif', fontWeight: 700, fontSize: 14, color: 'var(--g700)' }}>
-                    {fmt(finance[s.id])}{s.suffix}
+                    {s.money ? money(finance[s.id]) : fmt(finance[s.id]) + (s.suffix || '')}
                   </span>
                   <span style={{ fontSize: 12.5, color: 'var(--soft)' }}>{s.label}</span>
                 </div>
@@ -143,9 +148,9 @@ export default function Finance({ finance, onChange }) {
               <div style={{ position: 'absolute', top: 0, right: 0, background: 'var(--ink)', color: '#fff', borderRadius: 10, padding: '8px 12px', fontSize: 12, lineHeight: 1.6, pointerEvents: 'none', boxShadow: '0 8px 20px -8px rgba(0,0,0,.4)' }}>
                 <div style={{ fontWeight: 700, marginBottom: 2 }}>الشهر {hover.m}</div>
                 <div>عملاء: {fmt(hover.customers)}</div>
-                <div>إيراد: {fmt(hover.revenue)}</div>
-                <div>تكلفة: {fmt(hover.cost)}</div>
-                <div style={{ color: hover.profit >= 0 ? '#8fe0aa' : '#f0a0a0' }}>ربح: {fmt(hover.profit)}</div>
+                <div>إيراد: {money(hover.revenue)}</div>
+                <div>تكلفة: {money(hover.cost)}</div>
+                <div style={{ color: hover.profit >= 0 ? '#8fe0aa' : '#f0a0a0' }}>ربح: {money(hover.profit)}</div>
               </div>
             )}
           </div>
