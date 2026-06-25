@@ -17,10 +17,13 @@ export default async function AppPage({ searchParams }) {
     if (user) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('subscription_status')
+        .select('subscription_status, subscription_expires')
         .eq('id', user.id)
         .single();
-      isPro = profile && ['active', 'trialing'].includes(profile.subscription_status);
+      isPro =
+        profile &&
+        profile.subscription_status === 'active' &&
+        (!profile.subscription_expires || new Date(profile.subscription_expires) > new Date());
     }
   } else {
     // وضع تطوير بدون Supabase — فعّل كل شيء

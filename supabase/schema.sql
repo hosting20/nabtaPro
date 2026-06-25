@@ -7,11 +7,14 @@
 create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   email text,
-  stripe_customer_id text unique,
-  subscription_status text default 'inactive',  -- inactive | active | trialing | canceled
+  subscription_status text default 'inactive',  -- inactive | active | canceled
+  subscription_expires timestamptz,             -- تاريخ انتهاء اشتراك Pro
   plan text,
   updated_at timestamptz default now()
 );
+
+-- للترقية من نسخة سابقة:
+alter table public.profiles add column if not exists subscription_expires timestamptz;
 
 -- تفعيل أمان الصفوف
 alter table public.profiles enable row level security;

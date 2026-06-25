@@ -19,10 +19,13 @@ export async function POST(req) {
     // التحقق من الاشتراك الفعّال
     const { data: profile } = await supabase
       .from('profiles')
-      .select('subscription_status')
+      .select('subscription_status, subscription_expires')
       .eq('id', user.id)
       .single();
-    const active = profile && ['active', 'trialing'].includes(profile.subscription_status);
+    const active =
+      profile &&
+      profile.subscription_status === 'active' &&
+      (!profile.subscription_expires || new Date(profile.subscription_expires) > new Date());
     if (!active) {
       return NextResponse.json({ error: 'ميزات الذكاء الاصطناعي تتطلب اشتراك Pro' }, { status: 402 });
     }

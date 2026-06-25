@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const FREE = ['معالج الفكرة بالكامل (5 مراحل)', 'مؤشر نمو الفكرة الحيّ', 'لوحة المتابعة والمهام', 'تحليل تجريبي (بدون AI)'];
 const PRO = ['كل مزايا الخطة المجانية', 'تحليل جدوى حقيقي بالذكاء الاصطناعي', 'مرشد نبتة الذكي (نصائح فورية)', 'توليد صفحة الهبوط بالـAI', 'تقارير غير محدودة'];
@@ -8,11 +8,18 @@ export default function PricingClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout') === 'failed') {
+      setError('لم يكتمل الدفع' + (params.get('reason') ? ' — ' + params.get('reason') : '') + '. حاول مرة أخرى.');
+    }
+  }, []);
+
   const subscribe = async () => {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch('/api/stripe/checkout', { method: 'POST' });
+      const res = await fetch('/api/paylink/checkout', { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'تعذّر بدء الدفع');
       window.location.href = data.url;
@@ -69,8 +76,9 @@ export default function PricingClient() {
               ))}
             </ul>
             <button onClick={subscribe} disabled={loading} style={{ width: '100%', background: '#fff', color: 'var(--g700)', fontWeight: 800, fontSize: 15, border: 'none', borderRadius: 13, padding: 14, cursor: 'pointer', opacity: loading ? 0.7 : 1 }}>
-              {loading ? '… جارٍ التحويل' : 'اشترك في Pro ✦'}
+              {loading ? '… جارٍ التحويل للدفع' : 'اشترك في Pro ✦'}
             </button>
+            <div style={{ textAlign: 'center', fontSize: 11.5, opacity: 0.8, marginTop: 10 }}>دفع آمن عبر PayLink — مدى · Visa · Mastercard · Apple Pay</div>
           </div>
         </div>
       </div>

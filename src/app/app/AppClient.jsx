@@ -14,11 +14,11 @@ export default function AppClient({ email, isPro, initialProjectId }) {
     router.push('/login');
   };
 
-  const manageBilling = async () => {
+  const renewSubscription = async () => {
     try {
-      const res = await fetch('/api/stripe/portal', { method: 'POST' });
+      const res = await fetch('/api/paylink/checkout', { method: 'POST' });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'تعذّر فتح بوابة الاشتراك');
+      if (!res.ok) throw new Error(data.error || 'تعذّر بدء الدفع');
       window.location.href = data.url;
     } catch (e) {
       alert(e.message);
@@ -32,7 +32,7 @@ export default function AppClient({ email, isPro, initialProjectId }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button onClick={signOut} style={{ background: '#fff', color: 'var(--soft)', fontWeight: 600, fontSize: 13, border: '1.5px solid var(--line)', borderRadius: 10, padding: '8px 14px' }}>تسجيل الخروج</button>
           {isPro ? (
-            <button onClick={manageBilling} style={{ background: '#fff', color: 'var(--g700)', fontWeight: 700, fontSize: 13, border: '1.5px solid var(--g100)', borderRadius: 10, padding: '8px 14px', cursor: 'pointer' }}>⚙ إدارة الاشتراك</button>
+            <button onClick={renewSubscription} style={{ background: '#fff', color: 'var(--g700)', fontWeight: 700, fontSize: 13, border: '1.5px solid var(--g100)', borderRadius: 10, padding: '8px 14px', cursor: 'pointer' }}>↻ تجديد الاشتراك</button>
           ) : (
             <a href="/pricing" style={{ textDecoration: 'none', background: 'var(--g700)', color: '#fff', fontWeight: 700, fontSize: 13, border: 'none', borderRadius: 10, padding: '9px 16px' }}>↗ ترقية إلى Pro</a>
           )}
