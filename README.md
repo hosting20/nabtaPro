@@ -29,6 +29,9 @@ npm run dev                  # http://localhost:3000
 
 ## الإعداد خطوة بخطوة
 
+> 📘 لدليل نشر وربط الحسابات الكامل (Supabase + Anthropic + Stripe) خطوة بخطوة،
+> راجع **[DEPLOY.md](./DEPLOY.md)**.
+
 ### 1) Supabase
 1. أنشئ مشروعاً على <https://supabase.com>.
 2. نفّذ `supabase/schema.sql` في **SQL Editor** (يُنشئ جدول `profiles` والـ trigger).
