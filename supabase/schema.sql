@@ -9,12 +9,14 @@ create table if not exists public.profiles (
   email text,
   subscription_status text default 'inactive',  -- inactive | active | canceled
   subscription_expires timestamptz,             -- تاريخ انتهاء اشتراك Pro
+  ai_uses int not null default 0,               -- عدّاد التحاليل المجانية المستهلكة
   plan text,
   updated_at timestamptz default now()
 );
 
 -- للترقية من نسخة سابقة:
 alter table public.profiles add column if not exists subscription_expires timestamptz;
+alter table public.profiles add column if not exists ai_uses int not null default 0;
 
 -- تفعيل أمان الصفوف
 alter table public.profiles enable row level security;

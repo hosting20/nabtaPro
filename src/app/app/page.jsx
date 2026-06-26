@@ -1,4 +1,5 @@
 import { createClient, supabaseConfigured } from '@/lib/supabase/server';
+import { FREE_AI_LIMIT, isActivePro } from '@/lib/plan.js';
 import AppClient from './AppClient.jsx';
 
 export const dynamic = 'force-dynamic';
@@ -6,6 +7,7 @@ export const dynamic = 'force-dynamic';
 export default async function AppPage({ searchParams }) {
   let email = '';
   let isPro = false;
+  let freeRemaining = null; // عدد التحاليل المجانية المتبقية لغير المشتركين
   const initialProjectId = searchParams?.project || null;
 
   if (supabaseConfigured()) {
@@ -17,13 +19,13 @@ export default async function AppPage({ searchParams }) {
     if (user) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('subscription_status, subscription_expires')
+        .select('subscription_status, subscription_expires, ai_uses')
         .eq('id', user.id)
         .single();
-      isPro =
-        profile &&
-        profile.subscription_status === 'active' &&
-        (!profile.subscription_expires || new Date(profile.subscription_expires) > new Date());
+      isPro = isActivePro(profile);
+      if (!isPro) {
+        freeRemaining = Math.max(0, FREE_AI_LIMIT - ((profile && profile.ai_uses) || 0));
+      }
     }
   } else {
     // وضع تطوير بدون Supabase — فعّل كل شيء
@@ -31,5 +33,12 @@ export default async function AppPage({ searchParams }) {
     email = 'وضع التطوير';
   }
 
-  return <AppClient email={email} isPro={isPro} initialProjectId={initialProjectId} />;
+  return (
+    <AppClient
+      email={email}
+      isPro={isPro}
+      freeRemaining={freeRemaining}
+      initialProjectId={initialProjectId}
+    />
+  );
 }

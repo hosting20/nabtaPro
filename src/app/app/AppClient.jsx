@@ -3,8 +3,10 @@ import { useRouter } from 'next/navigation';
 import App from '@/App.jsx';
 import { createClient, supabaseConfigured } from '@/lib/supabase/client';
 
-export default function AppClient({ email, isPro, initialProjectId }) {
+export default function AppClient({ email, isPro, freeRemaining, initialProjectId }) {
   const router = useRouter();
+  const hasFree = typeof freeRemaining === 'number' && freeRemaining > 0;
+  const aiEnabled = isPro || hasFree;
 
   const signOut = async () => {
     if (supabaseConfigured()) {
@@ -50,15 +52,24 @@ export default function AppClient({ email, isPro, initialProjectId }) {
         </div>
       </div>
 
-      {/* شريط ترقية عند عدم الاشتراك */}
+      {/* شريط الخطة المجانية (freemium) */}
       {!isPro && (
         <div className="nb-noprint" style={{ background: 'linear-gradient(90deg,var(--g50),#fff)', borderBottom: '1px solid var(--g100)', padding: '10px 22px', textAlign: 'center', fontSize: 13.5, color: 'var(--g700)' }}>
-          أنت على الخطة المجانية — ميزات الذكاء الاصطناعي (التحليل والنصائح والتوليد) تعمل ببيانات تجريبية.{' '}
-          <a href="/pricing" style={{ color: 'var(--g700)', fontWeight: 700 }}>فعّل Pro للتحليل الحقيقي ✦</a>
+          {hasFree ? (
+            <>
+              لديك <b>{freeRemaining}</b> {freeRemaining === 1 ? 'تحليل ذكاء اصطناعي مجاني' : 'تحاليل ذكاء اصطناعي مجانية'} متبقية.{' '}
+              <a href="/pricing" style={{ color: 'var(--g700)', fontWeight: 700 }}>فعّل Pro للتحليل غير المحدود ✦</a>
+            </>
+          ) : (
+            <>
+              انتهت تحاليلك المجانية — تعمل الآن ببيانات تجريبية.{' '}
+              <a href="/pricing" style={{ color: 'var(--g700)', fontWeight: 700 }}>فعّل Pro للتحليل الحقيقي ✦</a>
+            </>
+          )}
         </div>
       )}
 
-      <App aiEnabled={isPro} canSave={supabaseConfigured()} initialProjectId={initialProjectId} />
+      <App aiEnabled={aiEnabled} canSave={supabaseConfigured()} initialProjectId={initialProjectId} />
     </div>
   );
 }
