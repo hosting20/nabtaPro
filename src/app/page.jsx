@@ -23,7 +23,7 @@ export default async function Home() {
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 28px', maxWidth: 1100, margin: '0 auto' }}>
         <nav style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           {loggedIn ? (
-            <a href="/app" style={navBtn('var(--g700)', '#fff', 'none')}>افتح التطبيق ←</a>
+            <a href="/app" style={navBtn('var(--g700)', '#fff', 'none')}>ابدأ مجاناً ←</a>
           ) : (
             <>
               <a href="/login" style={navBtn('#fff', 'var(--soft)', '1.5px solid var(--line)')}>دخول</a>
@@ -44,7 +44,7 @@ export default async function Home() {
         <h1 style={{ fontFamily: 'Tajawal, sans-serif', fontWeight: 800, fontSize: 44, lineHeight: 1.3, color: 'var(--ink)', margin: '0 0 18px' }}>ازرع فكرتك، تحقّق منها، واجعلها تُثمر</h1>
         <p style={{ fontSize: 17, lineHeight: 1.9, color: 'var(--soft)', margin: '0 0 30px' }}>منصّة عربية تحوّل فكرتك إلى تحليل جدوى متكامل بالذكاء الاصطناعي — من المشكلة حتى خطة الإطلاق واختبار الطلب الحقيقي.</p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <a href={loggedIn ? '/app' : '/signup'} style={{ ...navBtn('var(--g700)', '#fff', 'none'), padding: '15px 32px', fontSize: 16, boxShadow: '0 10px 24px -10px rgba(35,107,68,.7)' }}>{loggedIn ? 'افتح التطبيق' : 'ابدأ مجاناً الآن'} ←</a>
+          <a href={loggedIn ? '/app' : '/signup'} style={{ ...navBtn('var(--g700)', '#fff', 'none'), padding: '15px 32px', fontSize: 16, boxShadow: '0 10px 24px -10px rgba(35,107,68,.7)' }}>ابدأ مجاناً الآن ←</a>
           <a href="/pricing" style={{ ...navBtn('#fff', 'var(--g700)', '1.5px solid var(--g100)'), padding: '15px 32px', fontSize: 16 }}>شاهد الأسعار</a>
         </div>
       </section>
