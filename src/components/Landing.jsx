@@ -34,6 +34,20 @@ export default function Landing({ landing, loading, onField, onFeature, onGenera
     setEmails([]); setVisits(0); setSimSignups(0); setEmailInput('');
   };
 
+  /* تنزيل صفحة هبوط HTML مستقلة وجاهزة للنشر */
+  const downloadHtml = () => {
+    const html = buildLandingHtml(landing);
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'landing.html';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
   const field = (id, label, ph, area) => (
     <div style={{ marginBottom: 16 }}>
       <label style={{ display: 'block', textAlign: 'right', fontWeight: 600, fontSize: 13.5, color: 'var(--ink)', marginBottom: 7 }}>{label}</label>
@@ -54,6 +68,7 @@ export default function Landing({ landing, loading, onField, onFeature, onGenera
           <button onClick={onGenerate} disabled={loading} style={{ ...btn('var(--g700)', '#fff', 'none'), opacity: loading ? 0.7 : 1 }}>
             {loading ? '… يكتب المحتوى' : '✦ توليد المحتوى بالذكاء الاصطناعي'}
           </button>
+          <button onClick={downloadHtml} style={btn('#fff', 'var(--g700)', '1.5px solid var(--g100)')}>⬇ تنزيل HTML</button>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexDirection: 'row-reverse' }}>
           <div style={{ width: 44, height: 44, borderRadius: 13, background: 'linear-gradient(150deg,var(--g500),var(--g700))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🛬</div>
@@ -180,4 +195,68 @@ const inputStyle = {
 
 function btn(bg, color, border) {
   return { display: 'inline-flex', alignItems: 'center', gap: 8, background: bg, color, fontWeight: 700, fontSize: 14, border, borderRadius: 12, padding: '12px 18px', cursor: 'pointer' };
+}
+
+/* تهريب نص لإدراجه بأمان داخل HTML */
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/* بناء صفحة هبوط HTML مستقلة وجاهزة للنشر */
+function buildLandingHtml(landing) {
+  const color = /^#[0-9a-fA-F]{3,8}$/.test(landing.color || '') ? landing.color : '#236b44';
+  const feats = (landing.features || []).filter((f) => (f || '').trim()).slice(0, 3);
+  const featureCards = feats
+    .map(
+      (f) =>
+        `<div class="card"><div class="ic">✓</div><div>${esc(f)}</div></div>`
+    )
+    .join('\n        ');
+
+  return `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>${esc(landing.headline || 'صفحة الهبوط')}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Tajawal:wght@500;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{ --brand:${color}; }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'IBM Plex Sans Arabic',sans-serif;color:#15271c;background:radial-gradient(120% 80% at 50% 0%, ${color}14 0%, #fff 60%);min-height:100vh}
+  .wrap{max-width:760px;margin:0 auto;padding:64px 24px;text-align:center}
+  .badge{display:inline-block;font-size:13px;font-weight:700;color:var(--brand);background:${color}1a;padding:7px 16px;border-radius:999px;margin-bottom:22px}
+  h1{font-family:'Tajawal',sans-serif;font-weight:800;font-size:40px;line-height:1.3;margin-bottom:16px}
+  p.sub{font-size:17px;line-height:1.9;color:#5f7569;max-width:520px;margin:0 auto 30px}
+  form{display:flex;gap:8px;max-width:460px;margin:0 auto 16px}
+  input{flex:1;text-align:right;font-family:inherit;font-size:15px;border:1.5px solid #e2ede6;border-radius:12px;padding:14px 16px;outline:none}
+  button{background:var(--brand);color:#fff;font-family:inherit;font-weight:700;font-size:15px;border:none;border-radius:12px;padding:14px 24px;cursor:pointer;white-space:nowrap}
+  .thanks{display:none;color:var(--brand);font-weight:700;margin-bottom:16px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:34px}
+  .card{background:#fff;border:1px solid #e2ede6;border-radius:16px;padding:22px 14px}
+  .ic{width:34px;height:34px;border-radius:10px;background:${color}1a;color:var(--brand);display:flex;align-items:center;justify-content:center;font-weight:800;margin:0 auto 10px}
+  @media(max-width:560px){.grid{grid-template-columns:1fr}h1{font-size:30px}}
+</style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="badge">${esc(landing.audience || 'لجمهورك المستهدف')}</div>
+    <h1>${esc(landing.headline || 'عنوان رئيسي يلفت الانتباه')}</h1>
+    <p class="sub">${esc(landing.subheadline || 'اشرح القيمة التي تقدّمها لعميلك في جملة مقنعة.')}</p>
+    <form onsubmit="this.style.display='none';document.getElementById('t').style.display='block';return false;">
+      <input type="email" required placeholder="بريدك الإلكتروني" />
+      <button type="submit">${esc(landing.cta || 'ابدأ الآن')}</button>
+    </form>
+    <div id="t" class="thanks">شكراً! سنتواصل معك قريباً. ✦</div>
+    <div class="grid">
+        ${featureCards || ''}
+    </div>
+  </main>
+</body>
+</html>`;
 }
