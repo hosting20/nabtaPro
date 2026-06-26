@@ -19,9 +19,13 @@ export default function Wizard({
   onNext,
   onPrev,
   onAskTip,
+  aiScore = null,
+  aiScoreReason = '',
+  aiScoring = false,
+  onScoreAI,
 }) {
   const step = STEPS[stepIndex];
-  const score = overallScore(answers);
+  const score = aiScore != null ? aiScore : overallScore(answers);
   const stage = stageFor(score);
 
   const fieldStyle = {
@@ -131,7 +135,22 @@ export default function Wizard({
               <h3 style={{ margin: 0, fontWeight: 700, fontSize: 16, color: 'var(--ink)' }}>مؤشر نمو الفكرة</h3>
             </div>
             <Gauge score={score} style={gaugeStyle} stage={stage} />
+            <div style={{ textAlign: 'center', margin: '2px 0 10px', fontSize: 11.5, color: aiScore != null ? 'var(--g600)' : 'var(--soft)', fontWeight: 600 }}>
+              {aiScore != null ? '✦ تقييم بالذكاء الاصطناعي' : 'درجة الاكتمال — اضغط للتقييم الذكي'}
+            </div>
             <Breakdown answers={answers} />
+            <button
+              onClick={onScoreAI}
+              disabled={aiScoring}
+              style={{ marginTop: 14, width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'var(--g700)', color: '#fff', fontWeight: 700, fontSize: 14, border: 'none', borderRadius: 12, padding: 12, opacity: aiScoring ? 0.7 : 1, boxShadow: '0 8px 18px -8px rgba(35,107,68,.7)' }}
+            >
+              {aiScoring ? '… يُقيّم فكرتك' : aiScore != null ? '↻ إعادة التقييم بالذكاء الاصطناعي' : '✦ قيّم فكرتي بالذكاء الاصطناعي'}
+            </button>
+            {aiScoreReason && (
+              <div style={{ marginTop: 11, background: 'var(--g50)', border: '1px solid var(--g100)', borderRadius: 12, padding: '11px 14px', fontSize: 13, lineHeight: 1.7, color: 'var(--g700)', textAlign: 'right' }}>
+                {aiScoreReason}
+              </div>
+            )}
           </div>
 
           <MentorTips stepIndex={stepIndex} aiTips={aiTips} tipLoading={tipLoading} onAsk={onAskTip} />

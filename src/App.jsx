@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { STEPS, DEFAULT_TIPS } from './data/steps.js';
+import { overallScore } from './utils/scoring.js';
 import { callClaude, fallbackReport, buildAnalyzePrompt } from './api/claude.js';
 import Wizard from './components/Wizard.jsx';
 import Analyzing from './components/Analyzing.jsx';
@@ -39,6 +40,9 @@ export default function App({ aiEnabled = true, canSave = false, initialProjectI
   const [finance, setFinance] = useState(null);
   const [landing, setLanding] = useState(null);
   const [landingLoading, setLandingLoading] = useState(false);
+  const [aiScore, setAiScore] = useState(null);
+  const [aiScoreReason, setAiScoreReason] = useState('');
+  const [aiScoring, setAiScoring] = useState(false);
 
   const analyzeTimer = useRef(null);
 
@@ -46,6 +50,34 @@ export default function App({ aiEnabled = true, canSave = false, initialProjectI
 
   /* ── الإجابات ── */
   const setAnswer = (id, value) => setAnswers((a) => ({ ...a, [id]: value }));
+
+  /* ── تقييم جودة الفكرة بالذكاء الاصطناعي (درجة عند الطلب) ── */
+  const scoreWithAI = () => {
+    if (aiScoring) return;
+    setAiScoring(true);
+    const dump = STEPS.map(
+      (s) => '# ' + s.title + '\n' + s.fields.map((f) => '- ' + f.label + ': ' + (answers[f.id] || '(لم يُجب)')).join('\n')
+    ).join('\n\n');
+    const prompt =
+      'أنت محلل أعمال خبير. قيّم جودة فكرة المشروع التالية من 0 إلى 100 بناءً على وضوح المشكلة، وحجم الفرصة، وقوة الحل وتميّزه، ونموذج الإيرادات، وقابلية التنفيذ — وليس على طول الإجابات. كن صارماً وواقعياً. أعد JSON صالحاً فقط بهذا الشكل: {"score": <رقم 0-100>, "reason": "<سبب موجز في جملة واحدة بالعربية>"}\n\n' +
+      dump;
+    const done = (sc, reason) => {
+      setAiScore(sc);
+      setAiScoreReason(reason || '');
+      setAiScoring(false);
+    };
+    if (aiEnabled) {
+      callClaude([{ role: 'user', content: prompt }])
+        .then((raw) => {
+          const m = raw.match(/\{[\s\S]*\}/);
+          const o = JSON.parse(m[0]);
+          done(Math.max(0, Math.min(100, Math.round(Number(o.score)))), o.reason);
+        })
+        .catch(() => done(overallScore(answers), 'تعذّر التقييم بالذكاء الاصطناعي — عُرضت درجة الاكتمال.'));
+    } else {
+      setTimeout(() => done(overallScore(answers), 'فعّل الذكاء الاصطناعي (Pro) للحصول على تقييم حقيقي للفكرة.'), 400);
+    }
+  };
 
   /* ── اطلب نصيحة من المرشد ── */
   const askTip = () => {
@@ -215,6 +247,8 @@ export default function App({ aiEnabled = true, canSave = false, initialProjectI
     setStepIndex(d.stepIndex || 0);
     setDashTab(d.dashTab || 'overview');
     setAiTips([]);
+    setAiScore(null);
+    setAiScoreReason('');
     setScreen(d.report ? (d.screen && d.screen !== 'analyzing' ? d.screen : 'report') : 'wizard');
   };
 
@@ -236,6 +270,10 @@ export default function App({ aiEnabled = true, canSave = false, initialProjectI
           onNext={handleNext}
           onPrev={handlePrev}
           onAskTip={askTip}
+          aiScore={aiScore}
+          aiScoreReason={aiScoreReason}
+          aiScoring={aiScoring}
+          onScoreAI={scoreWithAI}
         />
       )}
 
