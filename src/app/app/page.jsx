@@ -12,9 +12,12 @@ export default async function AppPage({ searchParams }) {
 
   if (supabaseConfigured()) {
     const supabase = createClient();
+    // الـ middleware تحقق للتوّ من الجلسة عبر الشبكة، فنقرأها هنا محلياً من الكوكيز
+    // لتوفير رحلة شبكية إضافية في كل فتح للتطبيق
     const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      data: { session },
+    } = await supabase.auth.getSession();
+    const user = session?.user || null;
     email = user?.email || '';
     if (user) {
       const { data: profile } = await supabase

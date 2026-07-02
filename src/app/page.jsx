@@ -1,7 +1,5 @@
-import { supabaseConfigured, createClient } from '@/lib/supabase/server';
-
-export const dynamic = 'force-dynamic';
-
+/* صفحة ثابتة تُقدَّم من الـ CDN — لا استعلام جلسة هنا.
+   «ابدأ مجاناً» يشير إلى /signup، والـ middleware يحوّل المسجّلين منها إلى /app تلقائياً. */
 const FEATURES = [
   { icon: '🧭', title: 'معالج من 5 مراحل', text: 'المشكلة، السوق، الحل، الإيرادات، الإطلاق — بأسئلة موجّهة ومؤشر نمو حيّ.' },
   { icon: '✦', title: 'تحليل بالذكاء الاصطناعي', text: 'تقرير جدوى متكامل: SWOT، حجم السوق، المنافسون، وخطة بدء عملية.' },
@@ -9,27 +7,14 @@ const FEATURES = [
   { icon: '🛬', title: 'صفحة هبوط واختبار طلب', text: 'ولّد صفحة هبوط بالذكاء الاصطناعي واختبر الطلب الحقيقي قبل البناء.' },
 ];
 
-export default async function Home() {
-  let loggedIn = false;
-  if (supabaseConfigured()) {
-    const supabase = createClient();
-    const { data } = await supabase.auth.getUser();
-    loggedIn = Boolean(data?.user);
-  }
-
+export default function Home() {
   return (
     <div style={{ minHeight: '100vh' }}>
       {/* شريط علوي */}
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 28px', maxWidth: 1100, margin: '0 auto' }}>
         <nav style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          {loggedIn ? (
-            <a href="/app" style={navBtn('var(--g700)', '#fff', 'none')}>ابدأ مجاناً ←</a>
-          ) : (
-            <>
-              <a href="/login" style={navBtn('#fff', 'var(--soft)', '1.5px solid var(--line)')}>دخول</a>
-              <a href="/signup" style={navBtn('var(--g700)', '#fff', 'none')}>ابدأ مجاناً</a>
-            </>
-          )}
+          <a href="/login" style={navBtn('#fff', 'var(--soft)', '1.5px solid var(--line)')}>دخول</a>
+          <a href="/signup" style={navBtn('var(--g700)', '#fff', 'none')}>ابدأ مجاناً</a>
           <a href="/pricing" style={navBtn('#fff', 'var(--g700)', '1.5px solid var(--g100)')}>الأسعار</a>
         </nav>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexDirection: 'row-reverse' }}>
@@ -44,7 +29,7 @@ export default async function Home() {
         <h1 style={{ fontFamily: 'Tajawal, sans-serif', fontWeight: 800, fontSize: 44, lineHeight: 1.3, color: 'var(--ink)', margin: '0 0 18px' }}>ازرع فكرتك، تحقّق منها، واجعلها تُثمر</h1>
         <p style={{ fontSize: 17, lineHeight: 1.9, color: 'var(--soft)', margin: '0 0 30px' }}>منصّة عربية تحوّل فكرتك إلى تحليل جدوى متكامل بالذكاء الاصطناعي — من المشكلة حتى خطة الإطلاق واختبار الطلب الحقيقي.</p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <a href={loggedIn ? '/app' : '/signup'} style={{ ...navBtn('var(--g700)', '#fff', 'none'), padding: '15px 32px', fontSize: 16, boxShadow: '0 10px 24px -10px rgba(35,107,68,.7)' }}>ابدأ مجاناً الآن ←</a>
+          <a href="/signup" style={{ ...navBtn('var(--g700)', '#fff', 'none'), padding: '15px 32px', fontSize: 16, boxShadow: '0 10px 24px -10px rgba(35,107,68,.7)' }}>ابدأ مجاناً الآن ←</a>
           <a href="/pricing" style={{ ...navBtn('#fff', 'var(--g700)', '1.5px solid var(--g100)'), padding: '15px 32px', fontSize: 16 }}>شاهد الأسعار</a>
         </div>
       </section>
