@@ -23,6 +23,7 @@ export default function Wizard({
   aiScoreReason = '',
   aiScoring = false,
   onScoreAI,
+  inputError = '',
 }) {
   const step = STEPS[stepIndex];
   const score = aiScore != null ? aiScore : overallScore(answers);
@@ -111,6 +112,11 @@ export default function Wizard({
               </div>
             ))}
 
+            {inputError && (
+              <div style={{ background: '#fbeeee', border: '1px solid #f0d0d0', color: '#b03f3f', fontSize: 13.5, lineHeight: 1.8, borderRadius: 12, padding: '12px 15px', marginBottom: 14, textAlign: 'right' }}>
+                ⚠ {inputError}
+              </div>
+            )}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 8 }}>
               <button onClick={onNext} style={{ display: 'inline-flex', alignItems: 'center', gap: 9, background: 'var(--g700)', color: '#fff', fontWeight: 700, fontSize: 15, border: 'none', borderRadius: 13, padding: '14px 26px', boxShadow: '0 8px 18px -8px rgba(35,107,68,.7)' }}>
                 {stepIndex < 4 ? 'التالي ←' : 'حلّل فكرتي ✦'}

@@ -43,17 +43,42 @@ export default function App({ aiEnabled = true, canSave = false, initialProjectI
   const [aiScore, setAiScore] = useState(null);
   const [aiScoreReason, setAiScoreReason] = useState('');
   const [aiScoring, setAiScoring] = useState(false);
+  const [inputError, setInputError] = useState('');
 
   const analyzeTimer = useRef(null);
 
   useEffect(() => () => clearInterval(analyzeTimer.current), []);
 
   /* ── الإجابات ── */
-  const setAnswer = (id, value) => setAnswers((a) => ({ ...a, [id]: value }));
+  const setAnswer = (id, value) => {
+    setAnswers((a) => ({ ...a, [id]: value }));
+    if (inputError) setInputError('');
+  };
+
+  /* لا تحليل بدون حدّ أدنى من المعلومات: المشكلة والعميل والحل (10 أحرف لكلٍّ) */
+  const REQUIRED_FIELDS = [
+    { id: 'p_what', label: 'المشكلة', step: 0 },
+    { id: 'm_customer', label: 'عميلك المثالي', step: 1 },
+    { id: 's_what', label: 'الحل', step: 2 },
+  ];
+  const validateInput = () => {
+    const missing = REQUIRED_FIELDS.filter((f) => (answers[f.id] || '').trim().length < 10);
+    if (missing.length) {
+      setInputError(
+        'لا يمكن التحليل قبل إدخال معلومات كافية عن فكرتك. أكمل على الأقل: ' +
+          missing.map((f) => '«' + f.label + '»').join('، ') +
+          ' (10 أحرف فأكثر لكل إجابة).'
+      );
+      setStepIndex(missing[0].step);
+      return false;
+    }
+    return true;
+  };
 
   /* ── تقييم جودة الفكرة بالذكاء الاصطناعي (درجة عند الطلب) ── */
   const scoreWithAI = () => {
     if (aiScoring) return;
+    if (!validateInput()) return;
     setAiScoring(true);
     const dump = STEPS.map(
       (s) => '# ' + s.title + '\n' + s.fields.map((f) => '- ' + f.label + ': ' + (answers[f.id] || '(لم يُجب)')).join('\n')
@@ -111,6 +136,7 @@ export default function App({ aiEnabled = true, canSave = false, initialProjectI
 
   /* ── تحليل الفكرة ── */
   const analyze = () => {
+    if (!validateInput()) return;
     setScreen('analyzing');
     let k = 0;
     setAnalyzingMsg(ANALYZE_MSGS[0]);
@@ -183,6 +209,7 @@ export default function App({ aiEnabled = true, canSave = false, initialProjectI
       audience: answers.p_who || answers.m_customer || 'لرواد الأعمال الطموحين',
       features: feats,
       color: '#236b44',
+      formAction: '',
     };
   };
 
@@ -274,6 +301,7 @@ export default function App({ aiEnabled = true, canSave = false, initialProjectI
           aiScoreReason={aiScoreReason}
           aiScoring={aiScoring}
           onScoreAI={scoreWithAI}
+          inputError={inputError}
         />
       )}
 

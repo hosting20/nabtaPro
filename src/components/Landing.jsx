@@ -48,6 +48,18 @@ export default function Landing({ landing, loading, onField, onFeature, onGenera
     URL.revokeObjectURL(url);
   };
 
+  /* نسخ كود الصفحة للحافظة */
+  const [copied, setCopied] = useState(false);
+  const copyHtml = async () => {
+    try {
+      await navigator.clipboard.writeText(buildLandingHtml(landing));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      downloadHtml();
+    }
+  };
+
   const field = (id, label, ph, area) => (
     <div style={{ marginBottom: 16 }}>
       <label style={{ display: 'block', textAlign: 'right', fontWeight: 600, fontSize: 13.5, color: 'var(--ink)', marginBottom: 7 }}>{label}</label>
@@ -69,6 +81,7 @@ export default function Landing({ landing, loading, onField, onFeature, onGenera
             {loading ? '… يكتب المحتوى' : '✦ توليد المحتوى بالذكاء الاصطناعي'}
           </button>
           <button onClick={downloadHtml} style={btn('#fff', 'var(--g700)', '1.5px solid var(--g100)')}>⬇ تنزيل HTML</button>
+          <button onClick={copyHtml} style={btn('#fff', 'var(--soft)', '1.5px solid var(--line)')}>{copied ? '✓ نُسخ' : '⧉ نسخ الكود'}</button>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexDirection: 'row-reverse' }}>
           <div style={{ width: 44, height: 44, borderRadius: 13, background: 'linear-gradient(150deg,var(--g500),var(--g700))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🛬</div>
@@ -93,9 +106,24 @@ export default function Landing({ landing, loading, onField, onFeature, onGenera
               <input key={i} value={landing.features[i] || ''} placeholder={'ميزة ' + (i + 1)} onChange={(e) => onFeature(i, e.target.value)} style={{ ...inputStyle, marginBottom: 8 }} />
             ))}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <input type="color" value={landing.color} onChange={(e) => onField('color', e.target.value)} style={{ width: 46, height: 34, border: '1.5px solid var(--line)', borderRadius: 10, background: '#fff', cursor: 'pointer' }} />
             <span style={{ fontSize: 13, color: 'var(--soft)' }}>لون العلامة التجارية</span>
+          </div>
+          <div>
+            <label style={{ display: 'block', textAlign: 'right', fontWeight: 600, fontSize: 13.5, color: 'var(--ink)', marginBottom: 7 }}>
+              رابط استقبال التسجيلات (اختياري)
+            </label>
+            <input
+              value={landing.formAction || ''}
+              placeholder="https://formspree.io/f/xxxxxx"
+              onChange={(e) => onField('formAction', e.target.value)}
+              style={{ ...inputStyle, direction: 'ltr', textAlign: 'left' }}
+            />
+            <p style={{ margin: '7px 0 0', fontSize: 12, lineHeight: 1.7, color: 'var(--soft)', textAlign: 'right' }}>
+              أنشئ نموذجاً مجانياً في <a href="https://formspree.io" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--g700)' }}>formspree.io</a> والصق رابطه هنا —
+              فتصلك إيميلات المسجّلين من الصفحة المُنزَّلة فعلياً على بريدك.
+            </p>
           </div>
         </section>
 
@@ -248,11 +276,19 @@ function buildLandingHtml(landing) {
     <div class="badge">${esc(landing.audience || 'لجمهورك المستهدف')}</div>
     <h1>${esc(landing.headline || 'عنوان رئيسي يلفت الانتباه')}</h1>
     <p class="sub">${esc(landing.subheadline || 'اشرح القيمة التي تقدّمها لعميلك في جملة مقنعة.')}</p>
-    <form onsubmit="this.style.display='none';document.getElementById('t').style.display='block';return false;">
+    ${
+      (landing.formAction || '').trim().startsWith('http')
+        ? `<form action="${esc(landing.formAction.trim())}" method="POST">
+      <input type="email" name="email" required placeholder="بريدك الإلكتروني" />
+      <button type="submit">${esc(landing.cta || 'ابدأ الآن')}</button>
+    </form>
+    <div id="t" class="thanks"></div>`
+        : `<form onsubmit="this.style.display='none';document.getElementById('t').style.display='block';return false;">
       <input type="email" required placeholder="بريدك الإلكتروني" />
       <button type="submit">${esc(landing.cta || 'ابدأ الآن')}</button>
     </form>
-    <div id="t" class="thanks">شكراً! سنتواصل معك قريباً. ✦</div>
+    <div id="t" class="thanks">شكراً! سنتواصل معك قريباً. ✦</div>`
+    }
     <div class="grid">
         ${featureCards || ''}
     </div>
