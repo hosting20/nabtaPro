@@ -1,12 +1,21 @@
+'use client';
 import { useEffect, useRef, useState } from 'react';
 import { STEPS, DEFAULT_TIPS } from './data/steps.js';
+import { overallScore } from './utils/scoring.js';
 import { callClaude, fallbackReport, buildAnalyzePrompt } from './api/claude.js';
 import Wizard from './components/Wizard.jsx';
 import Analyzing from './components/Analyzing.jsx';
 import Report from './components/Report.jsx';
 import Dashboard from './components/Dashboard.jsx';
-import KeyModal from './components/KeyModal.jsx';
+import Landing from './components/Landing.jsx';
 import Settings from './components/Settings.jsx';
+import ProjectsBar from './components/ProjectsBar.jsx';
+
+/* استخراج رقم من نص حر (للسعر/التكلفة) */
+function numFrom(s, d) {
+  const m = String(s || '').match(/\d[\d,.]*/);
+  return m ? Math.round(parseFloat(m[0].replace(/,/g, ''))) : d;
+}
 
 const ANALYZE_MSGS = [
   'نقرأ المشكلة والجمهور المستهدف…',
@@ -15,7 +24,7 @@ const ANALYZE_MSGS = [
   'نبني خطة البدء…',
 ];
 
-export default function App() {
+export default function App({ aiEnabled = true, canSave = false, initialProjectId = null }) {
   const [screen, setScreen] = useState('wizard'); // wizard | analyzing | report | dashboard
   const [stepIndex, setStepIndex] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -27,16 +36,73 @@ export default function App() {
   const [dashTab, setDashTab] = useState('overview');
   const [gaugeStyle, setGaugeStyle] = useState('gauge');
   const [stepperStyle, setStepperStyle] = useState('numbered');
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('nabta_api_key') || '');
-  const [showKeyModal, setShowKeyModal] = useState(() => !localStorage.getItem('nabta_api_key'));
   const [showSettings, setShowSettings] = useState(false);
+  const [finance, setFinance] = useState(null);
+  const [landing, setLanding] = useState(null);
+  const [landingLoading, setLandingLoading] = useState(false);
+  const [aiScore, setAiScore] = useState(null);
+  const [aiScoreReason, setAiScoreReason] = useState('');
+  const [aiScoring, setAiScoring] = useState(false);
+  const [inputError, setInputError] = useState('');
 
   const analyzeTimer = useRef(null);
 
   useEffect(() => () => clearInterval(analyzeTimer.current), []);
 
   /* ── الإجابات ── */
-  const setAnswer = (id, value) => setAnswers((a) => ({ ...a, [id]: value }));
+  const setAnswer = (id, value) => {
+    setAnswers((a) => ({ ...a, [id]: value }));
+    if (inputError) setInputError('');
+  };
+
+  /* لا تحليل بدون حدّ أدنى من المعلومات: المشكلة والعميل والحل (10 أحرف لكلٍّ) */
+  const REQUIRED_FIELDS = [
+    { id: 'p_what', label: 'المشكلة', step: 0 },
+    { id: 'm_customer', label: 'عميلك المثالي', step: 1 },
+    { id: 's_what', label: 'الحل', step: 2 },
+  ];
+  const validateInput = () => {
+    const missing = REQUIRED_FIELDS.filter((f) => (answers[f.id] || '').trim().length < 10);
+    if (missing.length) {
+      setInputError(
+        'لا يمكن التحليل قبل إدخال معلومات كافية عن فكرتك. أكمل على الأقل: ' +
+          missing.map((f) => '«' + f.label + '»').join('، ') +
+          ' (10 أحرف فأكثر لكل إجابة).'
+      );
+      setStepIndex(missing[0].step);
+      return false;
+    }
+    return true;
+  };
+
+  /* ── تقييم جودة الفكرة بالذكاء الاصطناعي (درجة عند الطلب) ── */
+  const scoreWithAI = () => {
+    if (aiScoring) return;
+    if (!validateInput()) return;
+    setAiScoring(true);
+    const dump = STEPS.map(
+      (s) => '# ' + s.title + '\n' + s.fields.map((f) => '- ' + f.label + ': ' + (answers[f.id] || '(لم يُجب)')).join('\n')
+    ).join('\n\n');
+    const prompt =
+      'أنت محلل أعمال خبير. قيّم جودة فكرة المشروع التالية من 0 إلى 100 بناءً على وضوح المشكلة، وحجم الفرصة، وقوة الحل وتميّزه، ونموذج الإيرادات، وقابلية التنفيذ — وليس على طول الإجابات. كن صارماً وواقعياً. أعد JSON صالحاً فقط بهذا الشكل: {"score": <رقم 0-100>, "reason": "<سبب موجز في جملة واحدة بالعربية>"}\n\n' +
+      dump;
+    const done = (sc, reason) => {
+      setAiScore(sc);
+      setAiScoreReason(reason || '');
+      setAiScoring(false);
+    };
+    if (aiEnabled) {
+      callClaude([{ role: 'user', content: prompt }])
+        .then((raw) => {
+          const m = raw.match(/\{[\s\S]*\}/);
+          const o = JSON.parse(m[0]);
+          done(Math.max(0, Math.min(100, Math.round(Number(o.score)))), o.reason);
+        })
+        .catch(() => done(overallScore(answers), 'تعذّر التقييم بالذكاء الاصطناعي — عُرضت درجة الاكتمال.'));
+    } else {
+      setTimeout(() => done(overallScore(answers), 'فعّل الذكاء الاصطناعي (Pro) للحصول على تقييم حقيقي للفكرة.'), 400);
+    }
+  };
 
   /* ── اطلب نصيحة من المرشد ── */
   const askTip = () => {
@@ -48,30 +114,29 @@ export default function App() {
       setAiTips((t) => [...t, text]);
       setTipLoading(false);
     };
-    if (apiKey) {
-      callClaude(
-        [
-          {
-            role: 'user',
-            content:
-              'أنت «مرشد نبتة»، مستشار أعمال ودود يساعد رائد أعمال في مرحلة "' +
-              step.title +
-              '". إجاباته:\n' +
-              ans +
-              '\n\nأعطه نصيحة عملية واحدة محددة وقصيرة (جملتان كحد أقصى) بالعربية لتقوية فكرته في هذه المرحلة بالذات. ابدأ مباشرة دون مقدمات.',
-          },
-        ],
-        apiKey
-      )
+    const demo = () => finish(DEFAULT_TIPS[(stepIndex + aiTips.length + 1) % DEFAULT_TIPS.length]);
+    if (aiEnabled) {
+      callClaude([
+        {
+          role: 'user',
+          content:
+            'أنت «مرشد نبتة»، مستشار أعمال ودود يساعد رائد أعمال في مرحلة "' +
+            step.title +
+            '". إجاباته:\n' +
+            ans +
+            '\n\nأعطه نصيحة عملية واحدة محددة وقصيرة (جملتان كحد أقصى) بالعربية لتقوية فكرته في هذه المرحلة بالذات. ابدأ مباشرة دون مقدمات.',
+        },
+      ])
         .then((t) => finish(t.trim()))
-        .catch(() => finish('تعذّر جلب النصيحة الآن، تأكد من مفتاح API وحاول مجدداً.'));
+        .catch(demo);
     } else {
-      setTimeout(() => finish(DEFAULT_TIPS[(stepIndex + aiTips.length + 1) % DEFAULT_TIPS.length]), 350);
+      setTimeout(demo, 350);
     }
   };
 
   /* ── تحليل الفكرة ── */
   const analyze = () => {
+    if (!validateInput()) return;
     setScreen('analyzing');
     let k = 0;
     setAnalyzingMsg(ANALYZE_MSGS[0]);
@@ -91,8 +156,8 @@ export default function App() {
       setScreen('report');
     };
 
-    if (apiKey) {
-      callClaude([{ role: 'user', content: prompt }], apiKey)
+    if (aiEnabled) {
+      callClaude([{ role: 'user', content: prompt }])
         .then((raw) => {
           const m = raw.match(/\{[\s\S]*\}/);
           finish(JSON.parse(m[0]));
@@ -113,25 +178,81 @@ export default function App() {
       (r.recommendations || []).forEach((x, i) => t.push({ id: 'r' + i, text: x, cat: 'النمو', done: false }));
     }
     setTasks(t);
+    if (!finance) {
+      setFinance({
+        customers: 20,
+        growth: 15,
+        price: numFrom(answers.r_price, 49),
+        varCost: numFrom(answers.r_cost, 15),
+        fixedCost: 5000,
+      });
+    }
     setScreen('dashboard');
   };
 
   const toggleTask = (id) =>
     setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
 
-  /* ── المفتاح والإعدادات ── */
-  const saveKey = (v) => {
-    if (v) {
-      localStorage.setItem('nabta_api_key', v);
-      setApiKey(v);
-    }
-    setShowKeyModal(false);
+  const setFinanceField = (id, value) => setFinance((f) => ({ ...f, [id]: value }));
+
+  /* ── صفحة الهبوط ── */
+  const fallbackLanding = () => {
+    const r = report || {};
+    const feats = (answers.s_what || answers.s_uvp || answers.s_how)
+      ? [answers.s_uvp, answers.s_what, answers.s_how].filter(Boolean).slice(0, 3)
+      : (r.recommendations || ['ميزة 1', 'ميزة 2', 'ميزة 3']).slice(0, 3);
+    while (feats.length < 3) feats.push('');
+    return {
+      headline: answers.s_uvp || (r.verdict ? r.verdict : 'حلٌّ ذكي يوفّر وقتك وجهدك'),
+      subheadline: answers.p_what || (r.marketSize && r.marketSize.note) || 'نساعدك على حلّ مشكلتك بأبسط طريقة وأسرع وقت.',
+      cta: 'ابدأ الآن مجاناً',
+      audience: answers.p_who || answers.m_customer || 'لرواد الأعمال الطموحين',
+      features: feats,
+      color: '#236b44',
+      formAction: '',
+    };
   };
-  const resetKey = () => {
-    localStorage.removeItem('nabta_api_key');
-    setApiKey('');
-    setShowSettings(false);
-    setShowKeyModal(true);
+
+  const openLanding = () => {
+    setLanding((l) => l || fallbackLanding());
+    setScreen('landing');
+  };
+
+  const setLandingField = (id, value) => setLanding((l) => ({ ...l, [id]: value }));
+  const setLandingFeature = (i, value) =>
+    setLanding((l) => {
+      const features = [...l.features];
+      features[i] = value;
+      return { ...l, features };
+    });
+
+  const generateLanding = () => {
+    if (landingLoading) return;
+    setLandingLoading(true);
+    const dump = STEPS.map(
+      (s) => '# ' + s.title + '\n' + s.fields.map((f) => '- ' + f.label + ': ' + (answers[f.id] || '(لم يُجب)')).join('\n')
+    ).join('\n\n');
+    const fin = (obj) => {
+      setLanding((l) => ({ ...l, ...obj, features: (obj.features || l.features).slice(0, 3) }));
+      setLandingLoading(false);
+    };
+    if (aiEnabled) {
+      callClaude([
+        {
+          role: 'user',
+          content:
+            'أنت كاتب إعلانات محترف. بناءً على فكرة المشروع التالية، اكتب نص صفحة هبوط عربية مقنعة. أعد JSON صالحاً فقط دون أي نص آخر بهذا الشكل:\n{"headline":"<عنوان جذاب قصير>","subheadline":"<جملة قيمة>","cta":"<نص زر>","features":["<ميزة>","<ميزة>","<ميزة>"],"audience":"<وصف الجمهور>"}\n\n' +
+            dump,
+        },
+      ])
+        .then((raw) => {
+          const m = raw.match(/\{[\s\S]*\}/);
+          fin(JSON.parse(m[0]));
+        })
+        .catch(() => fin(fallbackLanding()));
+    } else {
+      setTimeout(() => fin(fallbackLanding()), 1200);
+    }
   };
 
   const handleNext = () => {
@@ -142,9 +263,27 @@ export default function App() {
     if (stepIndex > 0) setStepIndex(stepIndex - 1);
   };
 
+  /* ── لقطة الحالة للحفظ/التحميل ── */
+  const getSnapshot = () => ({ answers, report, tasks, finance, landing, stepIndex, dashTab, screen });
+  const loadSnapshot = (d) => {
+    setAnswers(d.answers || {});
+    setReport(d.report || null);
+    setTasks(d.tasks || []);
+    setFinance(d.finance || null);
+    setLanding(d.landing || null);
+    setStepIndex(d.stepIndex || 0);
+    setDashTab(d.dashTab || 'overview');
+    setAiTips([]);
+    setAiScore(null);
+    setAiScoreReason('');
+    setScreen(d.report ? (d.screen && d.screen !== 'analyzing' ? d.screen : 'report') : 'wizard');
+  };
+
   /* ── العرض ── */
   return (
     <>
+      {canSave && <ProjectsBar getSnapshot={getSnapshot} onLoad={loadSnapshot} initialId={initialProjectId} />}
+
       {screen === 'wizard' && (
         <Wizard
           stepIndex={stepIndex}
@@ -158,6 +297,11 @@ export default function App() {
           onNext={handleNext}
           onPrev={handlePrev}
           onAskTip={askTip}
+          aiScore={aiScore}
+          aiScoreReason={aiScoreReason}
+          aiScoring={aiScoring}
+          onScoreAI={scoreWithAI}
+          inputError={inputError}
         />
       )}
 
@@ -177,25 +321,38 @@ export default function App() {
           report={report}
           tasks={tasks}
           dashTab={dashTab}
+          finance={finance}
           onBackReport={() => setScreen('report')}
           onDownload={() => window.print()}
           onTab={setDashTab}
           onToggleTask={toggleTask}
+          onFinanceChange={setFinanceField}
+          onOpenLanding={openLanding}
         />
       )}
 
-      {screen === 'wizard' && showSettings && !showKeyModal && (
+      {screen === 'landing' && landing && (
+        <Landing
+          landing={landing}
+          loading={landingLoading}
+          onField={setLandingField}
+          onFeature={setLandingFeature}
+          onGenerate={generateLanding}
+          onBack={() => setScreen('dashboard')}
+        />
+      )}
+
+      {screen === 'wizard' && showSettings && (
         <Settings
           gaugeStyle={gaugeStyle}
           stepperStyle={stepperStyle}
           onGauge={setGaugeStyle}
           onStepper={setStepperStyle}
-          onResetKey={resetKey}
           onClose={() => setShowSettings(false)}
         />
       )}
 
-      {screen === 'wizard' && !showKeyModal && (
+      {screen === 'wizard' && (
         <button
           className="nb-noprint"
           title="الإعدادات"
@@ -205,8 +362,6 @@ export default function App() {
           ⚙
         </button>
       )}
-
-      {showKeyModal && <KeyModal onSave={saveKey} onSkip={() => setShowKeyModal(false)} />}
     </>
   );
 }

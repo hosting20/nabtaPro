@@ -1,72 +1,96 @@
-# نبتة — مستشار الأعمال الذكي (نسخة React)
+# نبتة — مستشار الأعمال الذكي (SaaS)
 
-تطبيق React يساعد رائد الأعمال على **زرع فكرته، التحقق منها، وتحويلها إلى خطة تنفيذ** — عبر معالج من 5 مراحل، مؤشر نمو حيّ، تحليل جدوى بالذكاء الاصطناعي (SWOT، حجم السوق، المنافسون، خطة البدء)، ولوحة متابعة للمهام.
+منصّة **SaaS** عربية تحوّل فكرة المشروع إلى تحليل جدوى متكامل بالذكاء الاصطناعي:
+معالج من 5 مراحل، مؤشر نمو حيّ، تقرير جدوى (SWOT، حجم السوق، المنافسون، خطة البدء)،
+لوحة متابعة (مهام · خطة زمنية · توقعات مالية تفاعلية)، وباني صفحة هبوط مع اختبار طلب.
 
-هذه إعادة بناء كاملة بـ **React + Vite** للنسخة الأصلية التي كانت ملف HTML واحداً.
+مبنيّة على **Next.js (App Router) + Supabase + PayLink**.
 
-## التشغيل
+## المزايا التقنية (SaaS)
+
+- 🔐 **مصادقة كاملة** عبر Supabase: بريد/كلمة مرور + Google (OAuth).
+- 🛡️ **خادم وسيط آمن للذكاء الاصطناعي** (`/api/ai`): مفتاح Anthropic يبقى على
+  الخادم ولا يصل المتصفح إطلاقاً، محميّ بالمصادقة والاشتراك.
+- 💳 **اشتراكات PayLink** (بوابة سعودية — مدى/Visa/Apple Pay): خطة مجانية + Pro.
+- 🚪 **حماية المسارات** عبر middleware (التطبيق يتطلب تسجيل دخول).
+- 💾 **حفظ المشاريع** لكل مستخدم في قاعدة البيانات (حفظ/فتح/حذف) محميّة بـ RLS.
+- ↻ **تجديد الاشتراك** بدفعة شهرية عبر PayLink (يفعّل Pro لمدة 30 يوماً).
+- صفحة هبوط تسويقية، صفحة أسعار، وصفحات دخول/تسجيل.
+
+## التشغيل محلياً
 
 ```bash
 npm install
-npm run dev      # خادم التطوير على http://localhost:5173
-npm run build    # بناء الإنتاج في مجلد dist
-npm run preview  # معاينة بناء الإنتاج
+cp .env.example .env.local   # ثم املأ القيم
+npm run dev                  # http://localhost:3000
 ```
 
-> يتطلب Node.js 18 أو أحدث.
+> يتطلب Node.js 18.18+ وحساب Supabase وحساب PayLink (للاشتراكات).
 
-## الذكاء الاصطناعي
+## الإعداد خطوة بخطوة
 
-- ميزتا **«اطلب نصيحة»** و**«حلّل فكرتي»** تستخدمان خدمة Anthropic (Claude) عبر الإنترنت،
-  لذا تحتاجان اتصالاً بالإنترنت ومفتاح API.
-- احصل على المفتاح من <https://console.anthropic.com>.
-- أدخله في نافذة الترحيب عند أول فتح (يُحفظ في `localStorage` بالمتصفح فقط).
-- بدون مفتاح، اضغط **«بدون AI»** وسيعمل التطبيق ببيانات تجريبية (تقرير احتياطي).
+> 📘 لدليل نشر وربط الحسابات الكامل (Supabase + Anthropic + PayLink) خطوة بخطوة،
+> راجع **[DEPLOY.md](./DEPLOY.md)**.
 
-## المزايا
+### 1) Supabase
+1. أنشئ مشروعاً على <https://supabase.com>.
+2. نفّذ `supabase/schema.sql` في **SQL Editor** (يُنشئ جدول `profiles` والـ trigger).
+3. من **Project Settings → API** انسخ: `NEXT_PUBLIC_SUPABASE_URL`،
+   `NEXT_PUBLIC_SUPABASE_ANON_KEY`، و`SUPABASE_SERVICE_ROLE_KEY`.
+4. لتفعيل Google: **Authentication → Providers → Google** وأضف عميل OAuth،
+   ثم في **URL Configuration** أضف `http://localhost:3000/auth/callback`
+   (ورابط الإنتاج) إلى Redirect URLs.
 
-- **معالج من 5 مراحل**: المشكلة · السوق · الحل · الإيرادات · الإطلاق.
-- **مؤشر نمو حيّ** يتحدّث أثناء الكتابة (قوس / حلقة / أعمدة عبر الإعدادات ⚙).
-- **شريط مراحل** بثلاثة أنماط (أرقام / تقدّم / مقاطع).
-- **مرشد نبتة الذكي**: نصائح فورية مخصّصة لكل مرحلة.
-- **تقرير جدوى**: درجة نضج، حكم عام، حجم السوق (TAM/SAM/SOM)، الإيرادات، SWOT، المنافسون، خطة البدء.
-- **لوحة متابعة**: مؤشرات أداء، تقدّم التنفيذ، قائمة مهام قابلة للتعليم، وتحليل تفصيلي.
-- **تنزيل PDF** عبر `window.print()` ثم «حفظ كـ PDF».
-- واجهة عربية كاملة **RTL** بخطوط Tajawal و IBM Plex Sans Arabic.
+### 2) Anthropic
+- ضع مفتاحك في `ANTHROPIC_API_KEY` (خادم فقط). احصل عليه من
+  <https://console.anthropic.com>.
+
+### 3) PayLink (بوابة دفع سعودية)
+1. سجّل كتاجر على <https://paylink.sa> وانسخ `API ID` و`Secret Key` إلى
+   `PAYLINK_API_ID` و`PAYLINK_SECRET_KEY`.
+2. اضبط `PAYLINK_BASE_URL` (اختبار: `https://restpilot.paylink.sa` ·
+   إنتاج: `https://restapi.paylink.sa`) و`PRO_PRICE` (السعر الشهري بالريال).
+3. لا حاجة لضبط Webhook — العودة إلى `/api/paylink/callback` تتحقّق من الدفع
+   وتفعّل الاشتراك لمدة 30 يوماً.
+
+> بدون ضبط Supabase يعمل المشروع في **وضع تطوير** (كل المزايا مفعّلة بلا تسجيل
+> دخول، والذكاء الاصطناعي يعمل إن ضُبط `ANTHROPIC_API_KEY`).
 
 ## بنية المشروع
 
 ```
 nabtaPro/
-├── index.html              # نقطة دخول Vite + تحميل الخطوط
-├── vite.config.js
-├── package.json
+├── next.config.mjs · jsconfig.json · package.json
+├── .env.example
+├── supabase/schema.sql          # جداول وسياسات قاعدة البيانات
 └── src/
-    ├── main.jsx            # تركيب React في #root
-    ├── App.jsx             # الحالة وتنسيق الشاشات والإجراءات
-    ├── index.css           # متغيرات الألوان، الحركات، أنماط الطباعة
-    ├── data/
-    │   └── steps.js        # بيانات المراحل والنصائح الافتراضية
-    ├── utils/
-    │   └── scoring.js      # احتساب الدرجة والمراحل
-    ├── api/
-    │   └── claude.js       # استدعاء Claude + التقرير الاحتياطي
-    └── components/
-        ├── Wizard.jsx      # شاشة المعالج
-        ├── Stepper.jsx     # شريط المراحل
-        ├── Gauge.jsx       # مؤشر النمو
-        ├── Breakdown.jsx   # تفصيل الدرجة
-        ├── MentorTips.jsx  # مرشد نبتة الذكي
-        ├── Analyzing.jsx   # شاشة التحميل
-        ├── Report.jsx      # تقرير الجدوى
-        ├── Swot.jsx        # مصفوفة SWOT
-        ├── Dashboard.jsx   # لوحة المتابعة
-        ├── KeyModal.jsx    # نافذة مفتاح API
-        └── Settings.jsx    # لوحة الإعدادات
+    ├── middleware.js            # تحديث الجلسة + حماية /app
+    ├── App.jsx                  # تطبيق نبتة (مكوّن عميل)
+    ├── lib/supabase/            # عملاء Supabase (client/server)
+    ├── lib/paylink.js           # تكامل بوابة PayLink
+    ├── app/
+    │   ├── layout.jsx · globals.css
+    │   ├── page.jsx             # الصفحة التسويقية
+    │   ├── login · signup       # المصادقة
+    │   ├── pricing              # الأسعار + دفع PayLink
+    │   ├── app/                 # التطبيق المحمي (page + AppClient)
+    │   ├── auth/callback        # تبادل رمز OAuth بجلسة
+    │   └── api/
+    │       ├── ai               # الخادم الوسيط لـ Claude (آمن)
+    │       └── paylink/         # checkout + callback
+    ├── lib/projects.js          # حفظ/فتح/حذف المشاريع (RLS)
+    ├── components/              # واجهة التطبيق (Wizard, Report, Dashboard, ProjectsBar …)
+    ├── data/steps.js · utils/scoring.js
+    └── api/claude.js            # عميل يستدعي /api/ai
 ```
 
-## ملاحظة أمان
+## الخطط
 
-يُرسَل مفتاح API مباشرةً من المتصفح إلى Anthropic باستخدام ترويسة
-`anthropic-dangerous-direct-browser-access`. هذا مناسب للاستخدام الشخصي والتجارب
-المحلية فقط؛ في الإنتاج مرّر الطلبات عبر خادم وسيط لإخفاء المفتاح.
+| | مجاني | Pro |
+|---|---|---|
+| معالج الفكرة ولوحة المتابعة | ✓ | ✓ |
+| التحليل بالذكاء الاصطناعي | تجريبي | حقيقي ✦ |
+| مرشد نبتة وتوليد صفحة الهبوط | — | ✓ |
+
+> المستخدم غير المشترك يعمل لديه التطبيق ببيانات تجريبية؛ الاشتراك في Pro يفعّل
+> طلبات Claude الحقيقية عبر الخادم الوسيط.

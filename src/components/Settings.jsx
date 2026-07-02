@@ -27,7 +27,7 @@ function Group({ opts, cur, onPick }) {
   );
 }
 
-export default function Settings({ gaugeStyle, stepperStyle, onGauge, onStepper, onResetKey, onClose }) {
+export default function Settings({ gaugeStyle, stepperStyle, onGauge, onStepper, onClose }) {
   return (
     <div
       className="nb-noprint"
@@ -54,9 +54,6 @@ export default function Settings({ gaugeStyle, stepperStyle, onGauge, onStepper,
             onPick={onStepper}
           />
         </div>
-        <button onClick={onResetKey} style={{ background: '#fff', color: '#b03f3f', fontSize: 13, fontWeight: 600, border: '1.5px solid #f0d0d0', borderRadius: 10, padding: '8px 12px' }}>
-          تغيير مفتاح API
-        </button>
       </div>
     </div>
   );

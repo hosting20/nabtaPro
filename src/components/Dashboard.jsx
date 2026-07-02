@@ -1,5 +1,7 @@
 import { stageFor } from '../utils/scoring.js';
 import Swot from './Swot.jsx';
+import Gantt from './Gantt.jsx';
+import Finance from './Finance.jsx';
 
 const card = { background: '#fff', border: '1px solid var(--line)', borderRadius: 20, padding: 24 };
 
@@ -15,7 +17,7 @@ function TabBtn({ id, label, tab, onTab }) {
   );
 }
 
-export default function Dashboard({ report, tasks, dashTab, onBackReport, onDownload, onTab, onToggleTask }) {
+export default function Dashboard({ report, tasks, dashTab, finance, onBackReport, onDownload, onTab, onToggleTask, onFinanceChange, onOpenLanding }) {
   const r = report;
   const done = tasks.filter((t) => t.done).length;
   const pct = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
@@ -91,6 +93,10 @@ export default function Dashboard({ report, tasks, dashTab, onBackReport, onDown
         })}
       </div>
     );
+  } else if (dashTab === 'timeline') {
+    body = <Gantt tasks={tasks} onToggleTask={onToggleTask} />;
+  } else if (dashTab === 'finance') {
+    body = <Finance finance={finance} onChange={onFinanceChange} />;
   } else {
     const mc = [
       { key: 'TAM', value: r.marketSize.tam },
@@ -135,6 +141,7 @@ export default function Dashboard({ report, tasks, dashTab, onBackReport, onDown
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <button onClick={onBackReport} style={{ background: '#fff', color: 'var(--soft)', fontWeight: 600, fontSize: 14, border: '1.5px solid var(--line)', borderRadius: 12, padding: '11px 18px' }}>→ التقرير</button>
           <button onClick={onDownload} style={{ background: 'var(--g700)', color: '#fff', fontWeight: 700, fontSize: 14, border: 'none', borderRadius: 12, padding: '11px 18px' }}>⬇ تنزيل PDF</button>
+          <button onClick={onOpenLanding} style={{ background: '#fff', color: 'var(--g700)', fontWeight: 700, fontSize: 14, border: '1.5px solid var(--g100)', borderRadius: 12, padding: '11px 18px' }}>🛬 صفحة الهبوط</button>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexDirection: 'row-reverse' }}>
           <div style={{ width: 44, height: 44, borderRadius: 13, background: 'linear-gradient(150deg,var(--g500),var(--g700))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🌱</div>
@@ -147,6 +154,8 @@ export default function Dashboard({ report, tasks, dashTab, onBackReport, onDown
       <div style={{ display: 'flex', gap: 10, marginBottom: 22, flexDirection: 'row-reverse', justifyContent: 'flex-end' }}>
         <TabBtn id="overview" label="نظرة عامة" tab={dashTab} onTab={onTab} />
         <TabBtn id="tasks" label="المهام" tab={dashTab} onTab={onTab} />
+        <TabBtn id="timeline" label="الخطة الزمنية" tab={dashTab} onTab={onTab} />
+        <TabBtn id="finance" label="المالية" tab={dashTab} onTab={onTab} />
         <TabBtn id="analysis" label="التحليل" tab={dashTab} onTab={onTab} />
       </div>
       {body}
